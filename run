@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+if [[ "$1" == "build" ]]; then
+    echo build
+elif [[ "$1" == "install" ]]; then
+    echo install
+elif [[ "$1" == "test" ]]; then
+    echo test
+else
+    echo url
+fi
