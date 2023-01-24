@@ -3,11 +3,15 @@
 EXE="./target/debug/ece461_team19_cli"
 
 if [[ "$1" == "build" ]]; then
+    # build program
     cargo build
 elif [[ "$1" == "install" ]]; then
+    # TODO list of dependencies to install
     echo "install what"
 elif [[ "$1" == "test" ]]; then
-    echo test
+    # TODO generate test reports
+    "$EXE" report some_report_file.profdata
 else
-    echo url
+    # parse url file
+    "$EXE" url $1
 fi
