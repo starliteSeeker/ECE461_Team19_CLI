@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
+EXE="./target/debug/ece461_team19_cli"
+
 if [[ "$1" == "build" ]]; then
-    echo build
+    cargo build
 elif [[ "$1" == "install" ]]; then
-    echo install
+    echo "install what"
 elif [[ "$1" == "test" ]]; then
     echo test
 else
