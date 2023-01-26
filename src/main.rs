@@ -17,16 +17,37 @@ enum Commands {
 }
 
 fn main() {
-    // setup logging level
+    // set logging level
     let level = std::env::var("LOG_LEVEL")
         .ok()
         .and_then(|i| i.parse::<u8>().ok());
-    let filter = match &level {
+    let mut filter = match level {
         Some(2) => LevelFilter::Debug,
         Some(1) => LevelFilter::Info,
         _ => LevelFilter::Off,
     };
-    env_logger::Builder::new().filter_level(filter).init();
+
+    // set log output
+    let log_output = if filter == LevelFilter::Off {
+        env_logger::fmt::Target::Stderr // can be anything
+    } else {
+        let fp = std::env::var("LOG_FILE")
+            .ok()
+            .and_then(|i| std::fs::File::create(i).ok());
+        if fp.is_none() {
+            // turn off loggin gif log file not found
+            filter = LevelFilter::Off;
+            env_logger::fmt::Target::Stderr // can be anything
+        } else {
+            env_logger::fmt::Target::Pipe(Box::new(fp.unwrap()))
+        }
+    };
+
+    // setup logger
+    env_logger::Builder::new()
+        .filter_level(filter)
+        .target(log_output)
+        .init();
 
     info!("print info");
     debug!("print debug");
