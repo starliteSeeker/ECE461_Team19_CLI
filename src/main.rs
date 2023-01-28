@@ -1,3 +1,5 @@
+mod req;
+
 use clap::{Parser, Subcommand};
 use log::{debug, info, LevelFilter};
 
@@ -17,6 +19,8 @@ enum Commands {
 }
 
 fn main() {
+    req::stuff();
+    panic!("stop here");
     // set logging level
     let level = std::env::var("LOG_LEVEL")
         .ok()
