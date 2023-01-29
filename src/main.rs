@@ -18,8 +18,8 @@ enum Commands {
     Report { report_file: String },
 }
 
-fn main() {
-    req::stuff();
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    req::stuff().unwrap();
     panic!("stop here");
     // set logging level
     let level = std::env::var("LOG_LEVEL")
@@ -63,4 +63,6 @@ fn main() {
         Commands::Url { url_file: f } => println!("url: {:?}", f),
         Commands::Report { report_file: f } => println!("test: {:?}", f),
     }
+
+    Ok(())
 }

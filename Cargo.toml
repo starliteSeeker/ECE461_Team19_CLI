@@ -8,4 +8,6 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.1.3", features = ["derive"] }
 env_logger = "0.10.0"
+futures = "0.3.25"
 log = "0.4.17"
+reqwest = { version = "0.11.14", features = ["blocking"] } # also need libssl-dev
