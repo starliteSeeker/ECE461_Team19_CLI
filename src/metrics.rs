@@ -1,5 +1,5 @@
-mod github;
+pub mod github;
 
 pub trait Metrics {
-    fn get_correctness() -> f64;
+    fn correctness(&self) -> f64;
 }
