@@ -19,12 +19,6 @@ enum Commands {
 }
 
 fn main() {
-    let a = metrics::github::Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
-    println!(
-        "{:?}",
-        a.get_json("stargazers").unwrap().as_array().unwrap().len()
-    );
-
     // set logging level
     let level = std::env::var("LOG_LEVEL")
         .ok()

@@ -72,8 +72,8 @@ impl Github {
             .send()
     }
 
-    // API call with result in json format
-    pub fn get_json(&self, path: &str) -> reqwest::Result<serde_json::Value> {
+    // REST API call with result in json format
+    pub fn rest_json(&self, path: &str) -> reqwest::Result<serde_json::Value> {
         self.rest_api(path)?.json::<serde_json::Value>()
     }
 }
@@ -127,13 +127,13 @@ mod tests {
         assert!(Github::with_url("https://github.com/rust-lang").is_none());
     }
 
-    // testing rest_api()
+    // testing rest_json()
     #[test]
     fn rest_api_stargazers() -> reqwest::Result<()> {
         let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
         assert_eq!(
             30,
-            g.get_json("stargazers").unwrap().as_array().unwrap().len()
+            g.rest_json("stargazers").unwrap().as_array().unwrap().len()
         );
         Ok(())
     }
