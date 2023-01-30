@@ -2,7 +2,6 @@ mod metrics;
 
 use clap::{Parser, Subcommand};
 use log::{debug, info, LevelFilter};
-use metrics::Metrics;
 
 // command line argumand parser
 #[derive(Parser)]
@@ -20,10 +19,11 @@ enum Commands {
 }
 
 fn main() {
-    let g =
-        metrics::github::Github::with_url("https://github.com/lee3445/ECE461_Team19_CLI").unwrap();
-    println!("{:?}, {:?}", g, g.correctness());
-    panic!("no");
+    let a = metrics::github::Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
+    println!(
+        "{:?}",
+        a.get_json("stargazers").unwrap().as_array().unwrap().len()
+    );
 
     // set logging level
     let level = std::env::var("LOG_LEVEL")

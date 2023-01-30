@@ -1,9 +1,14 @@
 use crate::metrics::Metrics;
+use reqwest::header;
 
 #[derive(Debug)]
 pub struct Github {
+    // repository information
     owner: String,
     repo: String,
+
+    // API-related
+    client: reqwest::blocking::Client,
 }
 
 impl Github {
@@ -22,13 +27,54 @@ impl Github {
 
         // extract repo info from url
         let mut path = u.path().split('/').skip(1);
-        let owner = path.next()?;
-        let repo = path.next()?;
+        let owner = path.next()?.to_string();
+        let repo = path.next()?.to_string();
+
+        // http client
+        let mut headers = header::HeaderMap::new();
+        let t = std::env::var("GITHUB_TOKEN").ok()?;
+        let mut token = header::HeaderValue::from_str(&t).ok()?;
+        token.set_sensitive(true);
+        headers.insert(header::AUTHORIZATION, token);
+        headers.insert(
+            header::ACCEPT,
+            header::HeaderValue::from_static("application/vnd.github+json"),
+        );
+        headers.insert(
+            "X-GitHub-Api-Version",
+            header::HeaderValue::from_static("2022-11-28"),
+        );
+        let client = reqwest::blocking::Client::builder()
+            .user_agent("ECE461_Team19_CLI")
+            .default_headers(headers)
+            .build()
+            .ok()?;
 
         Some(Github {
-            owner: owner.to_string(),
-            repo: repo.to_string(),
+            owner,
+            repo,
+            client,
         })
+    }
+
+    // GitHub REST API
+    // https://docs.github.com/en/rest?apiVersion=2022-11-28
+    pub fn rest_api(&self, path: &str) -> reqwest::Result<reqwest::blocking::Response> {
+        self.client
+            .get(format!(
+                "https://api.github.com/repos/{}/{}/{}",
+                self.owner, self.repo, path
+            ))
+            .header(
+                header::ACCEPT,
+                header::HeaderValue::from_static("application/vnd.github+json"),
+            )
+            .send()
+    }
+
+    // API call with result in json format
+    pub fn get_json(&self, path: &str) -> reqwest::Result<serde_json::Value> {
+        self.rest_api(path)?.json::<serde_json::Value>()
     }
 }
 impl Metrics for Github {
@@ -53,10 +99,11 @@ impl Metrics for Github {
     }
 }
 
-#[cfg(test)]
+#[cfg(test)] // needs $GITHUB_TOKEN
 mod tests {
     use super::*;
 
+    // testing with_url()
     #[test]
     fn construct_with_url() {
         let a = Github::with_url("https://github.com/lee3445/ECE461_Team19_CLI").unwrap();
@@ -67,17 +114,27 @@ mod tests {
 
     #[test]
     fn construct_with_bad_url() {
+        // not an url
         assert!(Github::with_url("not an url").is_none());
-    }
-    #[test]
-    fn construct_with_wrong_domain() {
+
+        // not a github url
         assert!(Github::with_url(
             "https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html"
         )
         .is_none());
-    }
-    #[test]
-    fn construct_with_bad_github_url() {
+
+        // not a repo url
         assert!(Github::with_url("https://github.com/rust-lang").is_none());
+    }
+
+    // testing rest_api()
+    #[test]
+    fn rest_api_stargazers() -> reqwest::Result<()> {
+        let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
+        assert_eq!(
+            30,
+            g.get_json("stargazers").unwrap().as_array().unwrap().len()
+        );
+        Ok(())
     }
 }
