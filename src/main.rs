@@ -1,3 +1,5 @@
+mod metrics;
+
 use clap::{Parser, Subcommand};
 use log::{debug, info, LevelFilter};
 
