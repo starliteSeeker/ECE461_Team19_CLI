@@ -6,8 +6,9 @@ if [[ "$1" == "build" ]]; then
     # build program
     cargo build
 elif [[ "$1" == "install" ]]; then
-    # TODO list of dependencies to install
-    echo "install what"
+    # install test dependencies
+    rustup component add llvm-tools-preview
+    cargo install cargo-binutils
 elif [[ "$1" == "test" ]]; then
     # check for github token
     if [[ "$GITHUB_TOKEN" == "" ]]; then
