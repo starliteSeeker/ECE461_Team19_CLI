@@ -9,8 +9,34 @@ elif [[ "$1" == "install" ]]; then
     # TODO list of dependencies to install
     echo "install what"
 elif [[ "$1" == "test" ]]; then
-    # TODO generate test reports
-    "$EXE" report some_report_file.profdata
+    # check for github token
+    if [[ "$GITHUB_TOKEN" == "" ]]; then
+        echo "Please supply \$GITHUB_TOKEN for the correct test result"
+        exit
+    fi
+
+    # remove files of previous tests
+    rm -f *.profraw
+    rm -f *.profdata
+    rm -f cargo_test.out
+    rm -f test_result.out
+    rm -f line_result.out
+
+    # run tests
+    RUSTFLAGS="-C instrument-coverage" cargo test --tests --message-format=json --no-run > cargo_test.out
+    TEST_EXE=$(tail -2 cargo_test.out | head -1 | sed 's/.*"executable":"\([^"]*\)".*/\1/')
+    $TEST_EXE --logfile=./test_result.out
+
+    # merge coverage data
+    rust-profdata merge -sparse *.profraw -o line_result.profdata
+    rust-cov export -format=text -summary-only $TEST_EXE \
+        --instr-profile=line_result.profdata \
+        --ignore-filename-regex=/.cargo/registry \
+        --ignore-filename-regex=/rustc \
+        > ./line_result.out
+
+    # process test result
+    "$EXE" report ./test_result.out ./line_result.out
 else
     # parse url file
     "$EXE" url $1
