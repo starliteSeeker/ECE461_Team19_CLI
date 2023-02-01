@@ -23,19 +23,20 @@ elif [[ "$1" == "test" ]]; then
     rm -f line_result.out
 
     # run tests
-    RUSTFLAGS="-C instrument-coverage" cargo test --tests --message-format=json --no-run > cargo_test.out
+    RUSTFLAGS="-C instrument-coverage" cargo test --tests --message-format=json --no-run ece461_team19_cli > cargo_test.out
     TEST_EXE=$(tail -2 cargo_test.out | head -1 | sed 's/.*"executable":"\([^"]*\)".*/\1/')
-    $TEST_EXE --logfile=./test_result.out
+    "$TEST_EXE" --logfile=./test_result.out
 
     # merge coverage data
     rust-profdata merge -sparse *.profraw -o line_result.profdata
-    rust-cov export -format=text -summary-only $TEST_EXE \
+    rust-cov export -format=text -summary-only "$TEST_EXE" \
         --instr-profile=line_result.profdata \
         --ignore-filename-regex=/.cargo/registry \
         --ignore-filename-regex=/rustc \
         > ./line_result.out
 
     # process test result
+    [[ -f "$EXE" ]] || "$0" build
     "$EXE" report ./test_result.out ./line_result.out
 else
     # parse url file

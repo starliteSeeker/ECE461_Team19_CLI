@@ -1,2 +1,5 @@
 /target
-/cloned_repo
+/cloned_*
+/*.out
+/*.profraw
+/*.profdata

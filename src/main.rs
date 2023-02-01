@@ -1,3 +1,4 @@
+mod file_parser;
 mod metrics;
 
 use clap::{Parser, Subcommand};
@@ -22,7 +23,10 @@ enum Commands {
     Url { url_file: String },
 
     /// Parse results of tests
-    Report { report_file: String },
+    Report {
+        test_result: String,
+        line_analysis: String,
+    },
 }
 
 fn main() -> Result<(), String> {
@@ -66,7 +70,17 @@ fn main() -> Result<(), String> {
 
     match &cli.command {
         Commands::Url { url_file: f } => calcscore(f)?, //println!("url: {:?}", f),
-        Commands::Report { report_file: f } => println!("test: {:?}", f),
+        Commands::Report {
+            test_result: t,
+            line_analysis: l,
+        } => {
+            let (tests, passed) = file_parser::test_cases(t).unwrap();
+            let coverage = file_parser::code_coverage(l).unwrap();
+            println!(
+                "{}/{} test cases passed. {:.2}% line coverage achieved.",
+                passed, tests, coverage
+            )
+        }
     }
 
     Ok(())
