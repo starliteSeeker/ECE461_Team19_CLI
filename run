@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# exit on error
+set -e
+
 EXE="./target/debug/ece461_team19_cli"
 
 if [ -x "$(command -v rustup)" ]; then
