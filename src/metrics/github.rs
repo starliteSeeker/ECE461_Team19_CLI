@@ -84,11 +84,12 @@ impl Github {
 }
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
-        let repo_path = std::env::current_dir().unwrap();
+        let mut repo_path = std::env::current_dir().unwrap();
+        repo_path.push("git");
 
         git2::Repository::clone(&self.link, repo_path).unwrap();
 
-        let file = std::fs::File::open("README.md").unwrap();
+        let file = std::fs::File::open("cloned_repo/README.md").unwrap();
         let reader = std::io::BufReader::new(file);
 
         let lines = reader.lines().count();
