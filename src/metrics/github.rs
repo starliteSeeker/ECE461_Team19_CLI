@@ -1,11 +1,14 @@
 use crate::metrics::Metrics;
 use reqwest::header;
+use std::io::BufRead;
+use statrs::distribution::{ContinuousCDF, Normal};
 
 #[derive(Debug)]
 pub struct Github {
     // repository information
     owner: String,
     repo: String,
+    link: String,
 
     // API-related
     client: reqwest::blocking::Client,
@@ -27,6 +30,7 @@ impl Github {
 
         // extract repo info from url
         let mut path = u.path().split('/').skip(1);
+        let link = url.to_string();
         let owner = path.next()?.to_string();
         let repo = path.next()?.to_string();
 
@@ -53,6 +57,7 @@ impl Github {
         Some(Github {
             owner,
             repo,
+            link,
             client,
         })
     }
@@ -79,7 +84,19 @@ impl Github {
 }
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
-        0.0
+        let repo_path = std::env::current_dir().unwrap();
+
+        git2::Repository::clone(&self.link, repo_path).unwrap();
+
+        let file = std::fs::File::open("README.md").unwrap();
+        let reader = std::io::BufReader::new(file);
+
+        let lines = reader.lines().count();
+        let x = lines as f64;
+        let y = x / 150.0 * 0.7;
+        let normal = Normal::new(0.0, 1.0).unwrap();
+        let cdf = normal.cdf(y) * y.sqrt() / 0.261;
+        cdf
     }
 
     fn correctness(&self) -> f64 {
