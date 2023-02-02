@@ -14,3 +14,4 @@ git2 = "0.16.1"
 statrs = "0.16.0"
 chrono = "0.4.23"
 assert_cmd = "2.0.8"
+clap = { version = "4.1.4", features = ["derive"] }

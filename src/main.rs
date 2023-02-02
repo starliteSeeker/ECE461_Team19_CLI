@@ -67,7 +67,6 @@ fn main() -> Result<(), String> {
 
     // parse command line arguments
     let cli = Cli::parse();
-
     match &cli.command {
         Commands::Url { url_file: f } => calcscore(f)?, //println!("url: {:?}", f),
         Commands::Report {
