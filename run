@@ -2,13 +2,25 @@
 
 EXE="./target/debug/ece461_team19_cli"
 
+if [ -x "$(command -v rustup)" ]; then
+    # use rustup to install llvm tools
+    LLVM_COV="rust-cov"
+    LLVM_PROFDATA="rust-profdata"
+else
+    # assume we are on eceprog
+    LLVM_COV="llvm-cov-14"
+    LLVM_PROFDATA="llvm-profdata-14"
+fi
+
 if [[ "$1" == "build" ]]; then
     # build program
     cargo build
 elif [[ "$1" == "install" ]]; then
     # install test dependencies
-    rustup component add llvm-tools-preview
-    cargo install cargo-binutils
+    if [ -x "$(command -v rustup)" ]; then
+        rustup component add llvm-tools-preview
+        cargo install cargo-binutils
+    fi
 elif [[ "$1" == "test" ]]; then
     # check for github token
     if [[ "$GITHUB_TOKEN" == "" ]]; then
@@ -29,8 +41,8 @@ elif [[ "$1" == "test" ]]; then
     "$TEST_EXE" --logfile=./test_result.out
 
     # merge coverage data
-    rust-profdata merge -sparse *.profraw -o line_result.profdata
-    rust-cov export -format=text -summary-only "$TEST_EXE" \
+    "$LLVM_PROFDATA" merge -sparse *.profraw -o line_result.profdata
+    "$LLVM_COV" export -format=text -summary-only "$TEST_EXE" \
         --instr-profile=line_result.profdata \
         --ignore-filename-regex=/.cargo/registry \
         --ignore-filename-regex=/rustc \
