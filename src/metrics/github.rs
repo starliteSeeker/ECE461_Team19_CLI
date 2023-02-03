@@ -84,14 +84,17 @@ impl Github {
 }
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
+        //Specify the path of repo to clone into
         let mut repo_path = std::env::current_dir().unwrap();
-        repo_path.push("git");
+        repo_path.push("cloned_repo");
 
+        //Clone the repo
         git2::Repository::clone(&self.link, repo_path).unwrap();
 
         let file = std::fs::File::open("cloned_repo/README.md").unwrap();
         let reader = std::io::BufReader::new(file);
 
+        //Get the # of lines and calculate the score
         let lines = reader.lines().count();
         let x = lines as f64;
         let y = x / 150.0 * 0.7;
