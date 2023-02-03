@@ -92,7 +92,28 @@ impl Metrics for Github {
     }
 
     fn compatibility(&self) -> f64 {
-        0.0
+        // get license with github api
+        let l = self.rest_json("license").unwrap();
+        let license = l["license"]["spdx_id"].as_str();
+
+        // no license found
+        if license.is_none() {
+            return 0.0;
+        }
+
+        let acceptable = [
+            "LGPL-2.1-only",
+            "LGPL-2.1-or-later",
+            "LGPL-3.0-only",
+            "BSD-3-Clause",
+            "MIT",
+            "X11",
+        ];
+        if acceptable.contains(&license.unwrap()) {
+            1.0
+        } else {
+            0.0
+        }
     }
 }
 
