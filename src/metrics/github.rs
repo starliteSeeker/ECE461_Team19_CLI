@@ -1,7 +1,7 @@
 use crate::metrics::Metrics;
 use reqwest::header;
 use std::io::BufRead;
-use statrs::distribution::{ContinuousCDF, Normal};
+use statrs::distribution::{Continuous, Normal};
 
 #[derive(Debug)]
 pub struct Github {
@@ -85,8 +85,7 @@ impl Github {
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
         //Specify the path of repo to clone into
-        let mut repo_path = std::env::current_dir().unwrap();
-        repo_path.push("cloned_repo");
+        let repo_path = std::path::Path::new("cloned_repo");
 
         //Clone the repo
         git2::Repository::clone(&self.link, repo_path).unwrap();
@@ -96,11 +95,12 @@ impl Metrics for Github {
 
         //Get the # of lines and calculate the score
         let lines = reader.lines().count();
-        let x = lines as f64;
-        let y = x / 150.0 * 0.7;
+        let mut x = lines as f64;
+        x = x / 150.0 * 0.7;
         let normal = Normal::new(0.0, 1.0).unwrap();
-        let cdf = normal.cdf(y) * y.sqrt() / 0.261;
-        cdf
+        let result = normal.pdf(x) * x.sqrt() / 0.261;
+        std::fs::remove_dir_all(repo_path).unwrap();
+        result
     }
 
     fn correctness(&self) -> f64 {
