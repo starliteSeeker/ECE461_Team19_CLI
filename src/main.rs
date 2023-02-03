@@ -3,6 +3,9 @@ mod metrics;
 use clap::{Parser, Subcommand};
 use log::{debug, info, LevelFilter};
 
+use metrics::github::Github;
+use metrics::Metrics;
+
 // command line argumand parser
 #[derive(Parser)]
 struct Cli {
@@ -19,6 +22,10 @@ enum Commands {
 }
 
 fn main() {
+    let g = Github::with_url("https://github.com/cloudinary/cloudinary_npm").unwrap();
+    println!("{}", g.compatibility());
+    panic!("no");
+
     // set logging level
     let level = std::env::var("LOG_LEVEL")
         .ok()

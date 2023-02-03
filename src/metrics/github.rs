@@ -80,6 +80,12 @@ impl Metrics for Github {
     }
 
     fn correctness(&self) -> f64 {
+        let mut all = 0;
+        let mut closed = 0;
+        let mut page = 0;
+        while let Ok(l) = self.rest_json(&format!("issues?per_page=100&pages={}", page)) {
+            page += 1;
+        }
         0.0
     }
 
