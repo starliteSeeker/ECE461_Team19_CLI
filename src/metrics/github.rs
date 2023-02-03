@@ -32,10 +32,11 @@ impl Github {
 
         // http client
         let mut headers = header::HeaderMap::new();
-        let t = std::env::var("GITHUB_TOKEN").ok()?;
-        let mut token = header::HeaderValue::from_str(&t).ok()?;
-        token.set_sensitive(true);
-        headers.insert(header::AUTHORIZATION, token);
+        let t = format!("Bearer {}", std::env::var("GITHUB_TOKEN").ok()?);
+        headers.insert(
+            header::AUTHORIZATION,
+            header::HeaderValue::from_str(&t).ok()?,
+        );
         headers.insert(
             header::ACCEPT,
             header::HeaderValue::from_static("application/vnd.github+json"),
@@ -65,10 +66,6 @@ impl Github {
                 "https://api.github.com/repos/{}/{}/{}",
                 self.owner, self.repo, path
             ))
-            .header(
-                header::ACCEPT,
-                header::HeaderValue::from_static("application/vnd.github+json"),
-            )
             .send()
     }
 
