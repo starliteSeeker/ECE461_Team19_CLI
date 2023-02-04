@@ -73,6 +73,27 @@ impl Github {
     pub fn rest_json(&self, path: &str) -> reqwest::Result<serde_json::Value> {
         self.rest_api(path)?.json::<serde_json::Value>()
     }
+
+    // count how many pages the result has
+    // see: https://docs.github.com/en/rest/guides/using-pagination-in-the-rest-api?apiVersion=2022-11-28
+    pub fn rest_page_count(&self, path: &str) -> reqwest::Result<u32> {
+        let response = self.rest_api(path)?;
+        let header = response.headers().get("link");
+        if header.is_none() {
+            if response.json::<serde_json::Value>().unwrap()["message"].is_null() {
+                return Ok(1);
+            } else {
+                return Ok(0);
+            }
+        }
+
+        // get substring with the page number
+        let res = header.unwrap().to_str().unwrap().split(',').nth(1).unwrap();
+        // get page number
+        let page = res.get(res.find("&page=").unwrap() + 6..res.find('>').unwrap());
+
+        Ok(page.unwrap().parse::<u32>().unwrap())
+    }
 }
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
@@ -80,13 +101,20 @@ impl Metrics for Github {
     }
 
     fn correctness(&self) -> f64 {
-        let mut all = 0;
-        let mut closed = 0;
-        let mut page = 0;
-        while let Ok(l) = self.rest_json(&format!("issues?per_page=100&pages={}", page)) {
-            page += 1;
+        // issues returns pull requests as well, so subtract pulls from issues
+        let all = self.rest_page_count("issues?state=all&per_page=1").unwrap()
+            - self.rest_page_count("pulls?state=all&per_page=1").unwrap();
+        let closed = self
+            .rest_page_count("issues?state=closed&per_page=1")
+            .unwrap()
+            - self
+                .rest_page_count("pulls?state=closed&per_page=1")
+                .unwrap();
+        if all == 0 {
+            0.0
+        } else {
+            closed as f64 / all as f64
         }
-        0.0
     }
 
     fn bus_factor(&self) -> f64 {

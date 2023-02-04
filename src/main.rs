@@ -22,10 +22,6 @@ enum Commands {
 }
 
 fn main() {
-    let g = Github::with_url("https://github.com/cloudinary/cloudinary_npm").unwrap();
-    println!("{}", g.compatibility());
-    panic!("no");
-
     // set logging level
     let level = std::env::var("LOG_LEVEL")
         .ok()
