@@ -5,14 +5,16 @@ set -e
 
 EXE="./target/debug/ece461_team19_cli"
 
-if [ -x "$(command -v rustup)" ]; then
-    # use rustup to install llvm tools
-    LLVM_COV="rust-cov"
-    LLVM_PROFDATA="rust-profdata"
-else
-    # assume we are on eceprog
+# check for existing llvm tools
+if [ -x "$(command -v llvm-cov-14)" ]; then
     LLVM_COV="llvm-cov-14"
+else
+    LLVM_COV="rust-cov"
+fi
+if [ -x "$(command -v llvm-profdata-14)" ]; then
     LLVM_PROFDATA="llvm-profdata-14"
+else
+    LLVM_PROFDATA="rust-profdata"
 fi
 
 if [[ "$1" == "build" ]]; then
@@ -20,7 +22,7 @@ if [[ "$1" == "build" ]]; then
     cargo build
 elif [[ "$1" == "install" ]]; then
     # install test dependencies
-    if [ -x "$(command -v rustup)" ]; then
+    if ! [ -x "$(command -v llvm-profdata-14)" ]; then
         rustup component add llvm-tools-preview
         cargo install cargo-binutils
     fi
