@@ -1,11 +1,14 @@
 use crate::metrics::Metrics;
 use reqwest::header;
+use std::io::BufRead;
+use statrs::distribution::{Continuous, Normal};
 
 #[derive(Debug)]
 pub struct Github {
     // repository information
     owner: String,
     repo: String,
+    link: String,
 
     // API-related
     client: reqwest::blocking::Client,
@@ -27,6 +30,7 @@ impl Github {
 
         // extract repo info from url
         let mut path = u.path().split('/').skip(1);
+        let link = url.to_string();
         let owner = path.next()?.to_string();
         let repo = path.next()?.to_string();
 
@@ -53,6 +57,7 @@ impl Github {
         Some(Github {
             owner,
             repo,
+            link,
             client,
         })
     }
@@ -79,7 +84,30 @@ impl Github {
 }
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
-        0.0
+        // Specify the path of repo to clone into
+        let repo_path = std::path::Path::new("cloned_repo");
+
+        // Clone the repo
+        git2::Repository::clone(&self.link, repo_path).unwrap();
+
+        // Check if there is readme
+        let file = match std::fs::File::open("cloned_repo/README.md") {
+            Ok(file) => file,
+            Err(_) => {
+                println!("Cannot find README");
+                return 0.0
+            },
+        };
+        let reader = std::io::BufReader::new(file);
+
+        // Get the # of lines and calculate the score
+        let lines = reader.lines().count();
+        let mut x = lines as f64;
+        x = x / 150.0 * 0.7;
+        let normal = Normal::new(0.0, 1.0).unwrap();
+        let result = normal.pdf(x) * x.sqrt() / 0.261;
+        std::fs::remove_dir_all(repo_path).unwrap();
+        result
     }
 
     fn correctness(&self) -> f64 {
