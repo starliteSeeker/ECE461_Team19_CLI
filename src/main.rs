@@ -3,9 +3,6 @@ mod metrics;
 use clap::{Parser, Subcommand};
 use log::{debug, info, LevelFilter};
 
-use metrics::github::Github;
-use metrics::Metrics;
-
 // command line argumand parser
 #[derive(Parser)]
 struct Cli {
