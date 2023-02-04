@@ -137,8 +137,10 @@ impl Metrics for Github {
 
         let acceptable = [
             "LGPL-2.1-only",
+            "LGPL-2.1",
             "LGPL-2.1-or-later",
             "LGPL-3.0-only",
+            "LGPL-3.0",
             "BSD-3-Clause",
             "MIT",
             "X11",
