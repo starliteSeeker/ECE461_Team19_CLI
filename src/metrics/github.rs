@@ -84,16 +84,23 @@ impl Github {
 }
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
-        //Specify the path of repo to clone into
+        // Specify the path of repo to clone into
         let repo_path = std::path::Path::new("cloned_repo");
 
-        //Clone the repo
+        // Clone the repo
         git2::Repository::clone(&self.link, repo_path).unwrap();
 
-        let file = std::fs::File::open("cloned_repo/README.md").unwrap();
+        // Check if there is readme
+        let file = match std::fs::File::open("cloned_repo/README.md") {
+            Ok(file) => file,
+            Err(_) => {
+                println!("Cannot find README");
+                return 0.0
+            },
+        };
         let reader = std::io::BufReader::new(file);
 
-        //Get the # of lines and calculate the score
+        // Get the # of lines and calculate the score
         let lines = reader.lines().count();
         let mut x = lines as f64;
         x = x / 150.0 * 0.7;
