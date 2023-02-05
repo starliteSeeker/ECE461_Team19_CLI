@@ -1,5 +1,6 @@
 use crate::metrics::Metrics;
-use reqwest::header;
+use reqwest::{header, Client};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 pub struct Github {
