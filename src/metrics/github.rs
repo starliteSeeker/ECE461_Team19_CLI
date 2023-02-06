@@ -36,10 +36,11 @@ impl Github {
 
         // http client
         let mut headers = header::HeaderMap::new();
-        let t = std::env::var("GITHUB_TOKEN").ok()?;
-        let mut token = header::HeaderValue::from_str(&t).ok()?;
-        token.set_sensitive(true);
-        headers.insert(header::AUTHORIZATION, token);
+        let t = format!("Bearer {}", std::env::var("GITHUB_TOKEN").ok()?);
+        headers.insert(
+            header::AUTHORIZATION,
+            header::HeaderValue::from_str(&t).ok()?,
+        );
         headers.insert(
             header::ACCEPT,
             header::HeaderValue::from_static("application/vnd.github+json"),
@@ -70,16 +71,33 @@ impl Github {
                 "https://api.github.com/repos/{}/{}/{}",
                 self.owner, self.repo, path
             ))
-            .header(
-                header::ACCEPT,
-                header::HeaderValue::from_static("application/vnd.github+json"),
-            )
             .send()
     }
 
     // REST API call with result in json format
     pub fn rest_json(&self, path: &str) -> reqwest::Result<serde_json::Value> {
         self.rest_api(path)?.json::<serde_json::Value>()
+    }
+
+    // count how many pages the result has
+    // see: https://docs.github.com/en/rest/guides/using-pagination-in-the-rest-api?apiVersion=2022-11-28
+    pub fn rest_page_count(&self, path: &str) -> reqwest::Result<u32> {
+        let response = self.rest_api(path)?;
+        let header = response.headers().get("link");
+        if header.is_none() {
+            if response.json::<serde_json::Value>().unwrap()["message"].is_null() {
+                return Ok(1);
+            } else {
+                return Ok(0);
+            }
+        }
+
+        // get substring with the page number
+        let res = header.unwrap().to_str().unwrap().split(',').nth(1).unwrap();
+        // get page number
+        let page = res.get(res.find("&page=").unwrap() + 6..res.find('>').unwrap());
+
+        Ok(page.unwrap().parse::<u32>().unwrap())
     }
 }
 impl Metrics for Github {
@@ -111,7 +129,20 @@ impl Metrics for Github {
     }
 
     fn correctness(&self) -> f64 {
-        0.0
+        // issues returns pull requests as well, so subtract pulls from issues
+        let all = self.rest_page_count("issues?state=all&per_page=1").unwrap()
+            - self.rest_page_count("pulls?state=all&per_page=1").unwrap();
+        let closed = self
+            .rest_page_count("issues?state=closed&per_page=1")
+            .unwrap()
+            - self
+                .rest_page_count("pulls?state=closed&per_page=1")
+                .unwrap();
+        if all == 0 {
+            0.0
+        } else {
+            closed as f64 / all as f64
+        }
     }
 
     fn bus_factor(&self) -> f64 {
@@ -123,7 +154,30 @@ impl Metrics for Github {
     }
 
     fn compatibility(&self) -> f64 {
-        0.0
+        // get license with github api
+        let l = self.rest_json("license").unwrap();
+        let license = l["license"]["spdx_id"].as_str();
+
+        // no license found
+        if license.is_none() {
+            return 0.0;
+        }
+
+        let acceptable = [
+            "LGPL-2.1-only",
+            "LGPL-2.1",
+            "LGPL-2.1-or-later",
+            "LGPL-3.0-only",
+            "LGPL-3.0",
+            "BSD-3-Clause",
+            "MIT",
+            "X11",
+        ];
+        if acceptable.contains(&license.unwrap()) {
+            1.0
+        } else {
+            0.0
+        }
     }
 }
 
