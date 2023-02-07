@@ -32,8 +32,7 @@ pub trait Metrics {
     }
 
     fn calc_correctness(all: u32, closed: u32) -> f64 {
-        println!("{:?} {:?}", all, closed);
-        if all == 0 {
+        if all == 0 || all < closed {
             0.0
         } else {
             closed as f64 / all as f64
@@ -92,5 +91,19 @@ mod tests {
     #[test]
     fn ramp_up_time_max() {
         assert!(TestMetrics::calc_ramp_up_time(150) == 1.0);
+    }
+
+    #[test]
+    fn correctness_edge_cases() {
+        assert!(TestMetrics::calc_correctness(0, 0) == 0.0);
+        assert!(TestMetrics::calc_correctness(100, 0) == 0.0);
+        assert!(TestMetrics::calc_correctness(100, 100) == 1.0);
+        assert!(TestMetrics::calc_correctness(0, 100) == 0.0);
+    }
+
+    #[test]
+    fn correctness_normal_cases() {
+        assert!(TestMetrics::calc_correctness(2000, 1900) == 1900.0 / 2000.0);
+        assert!(TestMetrics::calc_correctness(2000, 100) == 100.0 / 2000.0);
     }
 }
