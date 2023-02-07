@@ -124,16 +124,17 @@ impl Github {
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
         // Specify the path of repo to clone into
-        let repo_path = std::path::Path::new("cloned_repo");
+        let path_name = format!("cloned_{}_{}", self.owner, self.repo);
+        let repo_path = std::path::Path::new(&path_name);
 
         // Clone the repo
         git2::Repository::clone(&self.link, repo_path).unwrap();
 
         // Check if there is readme
-        let file = match std::fs::File::open("cloned_repo/README.md") {
+        let file = match std::fs::File::open(&format!("{}/README.md", path_name)) {
             Ok(file) => file,
             Err(_) => {
-                println!("Cannot find README");
+                std::fs::remove_dir_all(repo_path).unwrap();
                 return 0.0;
             }
         };
@@ -220,12 +221,14 @@ mod tests {
         assert!(Github::with_url("not an url").is_none());
 
         // not a github url
+        assert!(Github::with_url("127.0.0.1").is_none());
         assert!(Github::with_url(
             "https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html"
         )
         .is_none());
 
         // not a repo url
+        assert!(Github::with_url("https://github.com").is_none());
         assert!(Github::with_url("https://github.com/rust-lang").is_none());
     }
 
@@ -238,5 +241,25 @@ mod tests {
             g.rest_json("stargazers").unwrap().as_array().unwrap().len()
         );
         Ok(())
+    }
+
+    // testing metrics
+    #[test]
+    fn ramp_up_time_no_readme() {
+        let g = Github::with_url("https://github.com/phil-opp/llvm-tools").unwrap();
+        assert_eq!(0.0, g.ramp_up_time());
+    }
+
+    #[test]
+    fn ramp_up_time_normal_case() {
+        let g = Github::with_url("https://github.com/ppy/osu").unwrap();
+        assert!(g.ramp_up_time() > 0.0);
+    }
+
+    #[test]
+    fn ramp_up_time_max() {
+        // 147 lines
+        let g = Github::with_url("https://github.com/graphql/graphql-js").unwrap();
+        assert!(g.ramp_up_time() == 1.0);
     }
 }
