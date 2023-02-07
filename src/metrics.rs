@@ -106,4 +106,12 @@ mod tests {
         assert!(TestMetrics::calc_correctness(2000, 1900) == 1900.0 / 2000.0);
         assert!(TestMetrics::calc_correctness(2000, 100) == 100.0 / 2000.0);
     }
+
+    #[test]
+    fn compatibility_tests() {
+        assert!(TestMetrics::calc_compatibility("MIT") == 1.0);
+        assert!(TestMetrics::calc_compatibility("LGPL-2.1") == 1.0);
+        assert!(TestMetrics::calc_compatibility("notMIT") == 0.0);
+        assert!(TestMetrics::calc_compatibility("") == 0.0);
+    }
 }
