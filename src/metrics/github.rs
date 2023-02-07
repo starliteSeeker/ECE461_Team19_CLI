@@ -141,10 +141,7 @@ impl Metrics for Github {
 
         // Get the # of lines and calculate the score
         let lines = reader.lines().count();
-        let mut x = lines as f64;
-        x = x / 150.0 * 0.7;
-        let normal = Normal::new(0.0, 1.0).unwrap();
-        let result = normal.pdf(x) * x.sqrt() / 0.261;
+        let result = Self::calc_ramp_up_time(lines.try_into().unwrap_or(u32::MAX));
         std::fs::remove_dir_all(repo_path).unwrap();
         result
     }
@@ -159,11 +156,7 @@ impl Metrics for Github {
             - self
                 .rest_page_count("pulls?state=closed&per_page=1")
                 .unwrap();
-        if all == 0 {
-            0.0
-        } else {
-            closed as f64 / all as f64
-        }
+        Self::calc_correctness(all, closed)
     }
 
     fn bus_factor(&self) -> f64 {
@@ -204,21 +197,7 @@ impl Metrics for Github {
             return 0.0;
         }
 
-        let acceptable = [
-            "LGPL-2.1-only",
-            "LGPL-2.1",
-            "LGPL-2.1-or-later",
-            "LGPL-3.0-only",
-            "LGPL-3.0",
-            "BSD-3-Clause",
-            "MIT",
-            "X11",
-        ];
-        if acceptable.contains(&license.unwrap()) {
-            1.0
-        } else {
-            0.0
-        }
+        Self::calc_compatibility(&license.unwrap())
     }
 }
 
