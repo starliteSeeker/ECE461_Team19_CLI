@@ -28,7 +28,7 @@ pub trait Metrics {
         x = x / 150.0 * 0.7;
         let normal = Normal::new(0.0, 1.0).unwrap();
 
-        normal.pdf(x) * x.sqrt() / 0.261
+        f64::min(1.0, normal.pdf(x) * x.sqrt() / 0.261)
     }
 
     fn calc_correctness(all: u32, closed: u32) -> f64 {
@@ -86,7 +86,11 @@ mod tests {
     fn ramp_up_time_edge_cases() {
         assert!(TestMetrics::calc_ramp_up_time(0) == 0.0);
         assert!(TestMetrics::calc_ramp_up_time(u32::MAX) == 0.0);
-        assert!(TestMetrics::calc_ramp_up_time(1000) != 0.0);
+        assert!(TestMetrics::calc_ramp_up_time(1000) <= 0.1);
+    }
+
+    #[test]
+    fn ramp_up_time_max() {
         assert!(TestMetrics::calc_ramp_up_time(150) == 1.0);
     }
 }
