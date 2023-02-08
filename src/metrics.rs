@@ -28,7 +28,7 @@ pub trait Metrics {
         x = x / 150.0 * 0.7;
         let normal = Normal::new(0.0, 1.0).unwrap();
 
-        f64::min(1.0, normal.pdf(x) * x.sqrt() / 0.261)
+        normal.pdf(x) * x.sqrt() / 0.2613
     }
 
     fn calc_correctness(all: u32, closed: u32) -> f64 {
