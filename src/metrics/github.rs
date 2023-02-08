@@ -106,7 +106,13 @@ impl Github {
         let response = self.rest_api(path)?;
         let header = response.headers().get("link");
         if header.is_none() {
-            if response.json::<serde_json::Value>().unwrap()["message"].is_null() {
+            if response
+                .json::<serde_json::Value>()?
+                .as_array()
+                .unwrap()
+                .len()
+                != 0
+            {
                 return Ok(1);
             } else {
                 return Ok(0);
