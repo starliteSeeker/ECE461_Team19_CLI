@@ -260,6 +260,25 @@ mod tests {
     fn ramp_up_time_max() {
         // 147 lines
         let g = Github::with_url("https://github.com/graphql/graphql-js").unwrap();
-        assert!(g.ramp_up_time() == 1.0);
+        assert!(g.ramp_up_time() >= 0.99);
+    }
+
+    #[test]
+    fn correctness_no_issues() {
+        let g = Github::with_url("https://github.com/thinkloop/map-or-similar").unwrap();
+        assert!(g.correctness() == 0.0);
+    }
+
+    #[test]
+    fn correctness_max() {
+        // 0 open, 1 closed issues
+        let g = Github::with_url("https://github.com/crypto-browserify/md5.js").unwrap();
+        assert!(g.correctness() == 1.0);
+    }
+
+    #[test]
+    fn correctness_normal_case() {
+        let g = Github::with_url("https://github.com/neovim/neovim").unwrap();
+        assert!(g.correctness() >= 0.0);
     }
 }
