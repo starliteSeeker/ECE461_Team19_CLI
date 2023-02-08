@@ -243,7 +243,7 @@ mod tests {
         Ok(())
     }
 
-    // testing metrics
+    // testing ramp_up_time
     #[test]
     fn ramp_up_time_no_readme() {
         let g = Github::with_url("https://github.com/phil-opp/llvm-tools").unwrap();
@@ -263,6 +263,7 @@ mod tests {
         assert!(g.ramp_up_time() >= 0.99);
     }
 
+    // testing correctness
     #[test]
     fn correctness_no_issues() {
         let g = Github::with_url("https://github.com/thinkloop/map-or-similar").unwrap();
@@ -280,5 +281,30 @@ mod tests {
     fn correctness_normal_case() {
         let g = Github::with_url("https://github.com/neovim/neovim").unwrap();
         assert!(g.correctness() >= 0.0);
+    }
+
+    // testing compatibility
+    #[test]
+    fn compatibility_no_license() {
+        let g = Github::with_url("https://github.com/cloudinary/cloudinary_npm").unwrap();
+        assert!(g.compatibility() == 0.0);
+    }
+
+    #[test]
+    fn compatibility_lgpl_3() {
+        let g = Github::with_url("https://github.com/haskell/ghcup-hs").unwrap();
+        assert!(g.compatibility() == 1.0);
+    }
+
+    #[test]
+    fn compatibility_mit() {
+        let g = Github::with_url("https://github.com/microsoft/vscode").unwrap();
+        assert!(g.compatibility() == 1.0);
+    }
+
+    #[test]
+    fn compatibility_apache() {
+        let g = Github::with_url("https://github.com/haskell/haskell-language-server").unwrap();
+        assert!(g.compatibility() == 0.0);
     }
 }
