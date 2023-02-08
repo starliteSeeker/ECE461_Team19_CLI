@@ -23,7 +23,10 @@ pub trait Metrics {
     fn compatibility(&self) -> f64;
 
     // formulas for calculating metrics
-    fn calc_ramp_up_time(lines: u32) -> f64 {
+    fn calc_ramp_up_time(lines: u32) -> f64
+    where
+        Self: Sized,
+    {
         let mut x = lines as f64;
         x = x / 150.0 * 0.7;
         let normal = Normal::new(0.0, 1.0).unwrap();
@@ -31,7 +34,10 @@ pub trait Metrics {
         normal.pdf(x) * x.sqrt() / 0.2613
     }
 
-    fn calc_correctness(all: u32, closed: u32) -> f64 {
+    fn calc_correctness(all: u32, closed: u32) -> f64
+    where
+        Self: Sized,
+    {
         if all == 0 || all < closed {
             0.0
         } else {
@@ -39,7 +45,10 @@ pub trait Metrics {
         }
     }
 
-    fn calc_compatibility(license: &str) -> f64 {
+    fn calc_compatibility(license: &str) -> f64
+    where
+        Self: Sized,
+    {
         let acceptable = [
             "LGPL-2.1-only",
             "LGPL-2.1",

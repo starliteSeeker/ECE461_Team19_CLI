@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     fn ramp_up_time_normal_case() {
-        let g = Github::with_url("https://github.com/ppy/osu").unwrap();
+        let g = Github::with_url("https://github.com/yt-dlp/yt-dlp").unwrap();
         assert!(g.ramp_up_time() > 0.0);
     }
 
