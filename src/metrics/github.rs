@@ -221,7 +221,7 @@ mod tests {
         assert!(Github::with_url("not an url").is_none());
 
         // not a github url
-        assert!(Github::with_url("127.0.0.1").is_none());
+        assert!(Github::with_url("https://127.0.0.1/").is_none());
         assert!(Github::with_url(
             "https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html"
         )
