@@ -108,15 +108,13 @@ fn main() {
         let mut handle = stdout.lock();
 
         for dict in net_scores {
-            handle.write_fmt(format_args!("{{")).unwrap();
-            for (key, value) in dict {
-                if key != "LICENSE_SCORE" {
-                    handle.write_fmt(format_args!("{}:{}, ", key, value)).unwrap();
-                }
-                else {
-                    handle.write_fmt(format_args!("{}:{}}}\n", key, value)).unwrap();
-                }   
-            }
+            handle.write_fmt(format_args!("{{\"URL\":\"{:?}\", ", dict.get("URL"))).unwrap();
+            handle.write_fmt(format_args!("{{\"NET_SCORE\":{:?}, ", dict.get("NET_SCORE"))).unwrap();
+            handle.write_fmt(format_args!("{{\"RAMP_UP_SCORE\":{:?}, ", dict.get("RAMP_UP_SCORE"))).unwrap();
+            handle.write_fmt(format_args!("{{\"CORRECTNESS_SCORE\":{:?}, ", dict.get("CORRECTNESS_SCORE"))).unwrap();
+            handle.write_fmt(format_args!("{{\"BUS_FACTOR_SCORE\":{:?}, ", dict.get("BUS_FACTOR_SCORE"))).unwrap();
+            handle.write_fmt(format_args!("{{\"RESPONSIVE_MAINTAINER_SCORE\":{:?}, ", dict.get("RESPONSIVE_MAINTAINER_SCORE"))).unwrap();
+            handle.write_fmt(format_args!("{{\"LICENSE_SCORE\":{:?}\n", dict.get("LICENSE_SCORE"))).unwrap();
         }
     }
 }
