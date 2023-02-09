@@ -74,8 +74,10 @@ fn main() {
 
         for line in reader.lines() {
             let line = line.unwrap();
+            // if type is github
             if let Some(domain) = reqwest::Url::parse(&line).unwrap().domain() {
                 println!("{}", domain);
+                // calculate scores
                 let project:Box<dyn Metrics> = Box::new(Github::with_url(&line).unwrap());
                 let mut net_score = HashMap::new();
                 let ramp_up: f64 = project.ramp_up_time();
@@ -92,7 +94,7 @@ fn main() {
                 net_score.insert("RESPONSIVE_MAINTAINER_SCORE", responsiveness.to_string());
                 net_score.insert("LICENSE_SCORE", compatibility.to_string());
                 net_scores.push(net_score);
-
+                // sort by net scores
                 net_scores.sort_by(|a, b| b["NET_SCORE"].parse::<f64>().unwrap().partial_cmp(&a["NET_SCORE"].parse::<f64>().unwrap()).unwrap());
             } else if let Some(domain) = reqwest::Url::parse(&line).unwrap().domain(){
                 println!("{}", domain);
@@ -101,16 +103,18 @@ fn main() {
             }
         }
 
+        // stdout the output
         let stdout = std::io::stdout();
         let mut handle = stdout.lock();
 
         for dict in net_scores {
+            handle.write_fmt(format_args!("{{")).unwrap();
             for (key, value) in dict {
                 if key != "LICENSE_SCORE" {
                     handle.write_fmt(format_args!("{}:{}, ", key, value)).unwrap();
                 }
                 else {
-                    handle.write_fmt(format_args!("{}:{}\n", key, value)).unwrap();
+                    handle.write_fmt(format_args!("{}:{}}}\n", key, value)).unwrap();
                 }   
             }
         }
