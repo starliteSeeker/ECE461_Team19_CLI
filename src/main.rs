@@ -7,6 +7,8 @@ use metrics::Metrics;
 use metrics::github::Github;
 use std::io::Write;
 
+use crate::metrics::npm::Npm;
+
 // command line argumand parser
 #[derive(Parser)]
 struct Cli {
@@ -77,6 +79,7 @@ fn calcscore(f: &String) -> Result<(), String>{
 
     for line in reader.lines() {
         let line = line.unwrap();
+        info!("exploring {}", line);
         // if type is github
         if let Some(domain) = reqwest::Url::parse(&line).map_err(|_| format!("{} is not a url", line))?.domain() {
             println!("{}", domain);
@@ -86,9 +89,7 @@ fn calcscore(f: &String) -> Result<(), String>{
                 project = Box::new(Github::with_url(&line).unwrap());
             }
             else if domain == "www.npmjs.com" {
-                continue;
-                project = Box::new(Github::with_url(&line).unwrap());
-                println!("");
+                project = Box::new(Npm::with_url(&line).unwrap());
             }
             else {
                 continue;
@@ -114,8 +115,9 @@ fn calcscore(f: &String) -> Result<(), String>{
         }
     }
     // sort by net scores
+    info!("sorting by net scores...");
     net_scores.sort_by(|a, b| b["NET_SCORE"].parse::<f64>().unwrap().partial_cmp(&a["NET_SCORE"].parse::<f64>().unwrap()).unwrap());
-
+    info!("sorting complete");
 
     // stdout the output
     let stdout = std::io::stdout();

@@ -1,4 +1,5 @@
 use crate::metrics::Metrics;
+use log::info;
 use reqwest::header;
 use statrs::distribution::{Continuous, Normal};
 use std::io::BufRead;
@@ -112,7 +113,9 @@ impl Metrics for Github {
         let repo_path = std::path::Path::new("cloned_repo");
 
         // Clone the repo
+        info!("cloning Github repository from {}", &self.link);
         git2::Repository::clone(&self.link, repo_path).unwrap();
+        info!("repository cloned");
 
         // Check if there is readme
         let file = match std::fs::File::open("cloned_repo/README.md") {
@@ -124,13 +127,16 @@ impl Metrics for Github {
         };
         let reader = std::io::BufReader::new(file);
 
+        info!("calculating ramp_up_score");
         // Get the # of lines and calculate the score
         let lines = reader.lines().count();
         let mut x = lines as f64;
         x = x / 150.0 * 0.7;
         let normal = Normal::new(0.0, 1.0).unwrap();
         let result = normal.pdf(x) * x.sqrt() / 0.261;
+        info!("deleting Github repository");
         std::fs::remove_dir_all(repo_path).unwrap();
+        info!("repository deleted");
         result
     }
 
