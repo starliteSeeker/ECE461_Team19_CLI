@@ -36,6 +36,7 @@ impl Github {
 
         // http client
         let mut headers = header::HeaderMap::new();
+        //let t = "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";
         let t = std::env::var("GITHUB_TOKEN").ok()?;
         let mut token = header::HeaderValue::from_str(&t).ok()?;
         token.set_sensitive(true);
