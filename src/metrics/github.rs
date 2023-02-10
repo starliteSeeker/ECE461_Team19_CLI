@@ -1,7 +1,7 @@
 use crate::metrics::Metrics;
 use reqwest::header;
-use std::io::BufRead;
 use statrs::distribution::{Continuous, Normal};
+use std::io::BufRead;
 
 #[derive(Debug)]
 pub struct Github {
@@ -25,6 +25,12 @@ impl Github {
                 return None;
             }
         } else {
+            return None;
+        }
+
+        // check if scheme is https or http
+        let sch = u.scheme();
+        if sch != "https" && sch != "http" {
             return None;
         }
 
@@ -95,8 +101,8 @@ impl Metrics for Github {
             Ok(file) => file,
             Err(_) => {
                 println!("Cannot find README");
-                return 0.0
-            },
+                return 0.0;
+            }
         };
         let reader = std::io::BufReader::new(file);
 
