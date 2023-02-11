@@ -2,6 +2,7 @@ use crate::metrics::Metrics;
 use reqwest::header;
 use statrs::distribution::{Continuous, Normal};
 use std::io::BufRead;
+use async_trait::async_trait;
 
 #[derive(Debug)]
 pub struct Github {
@@ -85,6 +86,25 @@ impl Github {
         self.rest_api(path)?.json::<serde_json::Value>()
     }
 
+    // GitHub GraphQL API 
+    pub async fn graphql_api(&self) -> reqwest::Result<serde_json::Value> {
+        let client = reqwest::Client::builder();
+        let response = client
+            .user_agent("ECE461_Team19_CLI")
+            .build()
+            .unwrap()
+            .post("https://api.github.com/graphql")
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .bearer_auth(format!("{}", std::env::var("GITHUB_TOKEN").unwrap()))
+            .body(
+                format!("{{\"query\" : \"query {{ repository(owner:\\\"{}\\\", name:\\\"{}\\\") {{ mentionableUsers {{ totalCount }} }} }}\" }}", self.owner, self.repo)
+            )
+            .send()
+            .await?;
+        
+        return Ok(response.json::<serde_json::Value>().await?);
+    }
+
     // count how many pages the result has
     // see: https://docs.github.com/en/rest/guides/using-pagination-in-the-rest-api?apiVersion=2022-11-28
     pub fn rest_page_count(&self, path: &str) -> reqwest::Result<u32> {
@@ -106,6 +126,7 @@ impl Github {
         Ok(page.unwrap().parse::<u32>().unwrap())
     }
 }
+#[async_trait] 
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
         // Specify the path of repo to clone into
@@ -151,8 +172,12 @@ impl Metrics for Github {
         }
     }
 
-    fn bus_factor(&self) -> f64 {
-        0.0
+    async fn bus_factor(&self) -> f64 {
+        let bus = self.graphql_api().await.unwrap(); 
+        let stringData = bus["data"]["repository"]["mentionableUsers"]["totalCount"].as_str();
+        let mut x: f64 = stringData.unwrap().parse().unwrap();
+        x = ((2.0 * x) / (x + 1.0)) - 1.0 
+
     }
 
     fn responsiveness(&self) -> f64 {
