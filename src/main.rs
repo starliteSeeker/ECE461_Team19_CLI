@@ -7,8 +7,6 @@ use metrics::Metrics;
 use metrics::github::Github;
 use std::io::Write;
 
-use crate::metrics::npm::Npm;
-
 // command line argumand parser
 #[derive(Parser)]
 struct Cli {
@@ -89,7 +87,8 @@ fn calcscore(f: &String) -> Result<(), String>{
                 project = Box::new(Github::with_url(&line).unwrap());
             }
             else if domain == "www.npmjs.com" {
-                project = Box::new(Npm::with_url(&line).unwrap());
+                continue;
+                //project = Box::new(Npm::with_url(&line).unwrap());
             }
             else {
                 continue;

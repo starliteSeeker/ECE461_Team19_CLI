@@ -1,5 +1,4 @@
 pub mod github;
-pub mod npm;
 pub trait Metrics {
     // calculate metrics of module
     // returns value in range [0, 1]
