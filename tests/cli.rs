@@ -30,5 +30,20 @@ fn bad_file_name() {
 #[test]
 fn empty_file() {
     let mut cmd = Command::cargo_bin("ece461_team19_cli").unwrap();
-    cmd.args(["url", "empty.txt"]).assert().success().stdout("");
+    cmd.args(["url", "tests/empty.txt"])
+        .assert()
+        .success()
+        .stdout("");
+}
+
+#[test]
+fn bad_url() {
+    let mut cmd = Command::cargo_bin("ece461_team19_cli").unwrap();
+    cmd.args(["url", "tests/badurl.txt"]).assert().failure();
+}
+
+#[test]
+fn good_urls() {
+    let mut cmd = Command::cargo_bin("ece461_team19_cli").unwrap();
+    cmd.args(["url", "tests/url.txt"]).assert().success();
 }
