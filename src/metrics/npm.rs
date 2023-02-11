@@ -10,10 +10,14 @@ pub struct Npm {
 
 impl Npm {
     pub fn with_url(url: &str) -> Option<Npm> {
-        let resp = reqwest::blocking::get(url).unwrap().text().unwrap();
+        // println!("inside fun_npm\n");
+        // println!("input url = {:?}", url);
+        let npm_url = url.replace("https://www.npmjs.com/package/", "https://registry.npmjs.org/");
+        
+        let npm_url = reqwest::blocking::get(npm_url).unwrap().text().unwrap();
 
         // input url
-        let input: &str = &resp;
+        let input: &str = &npm_url;
 
         // parse url into generic JSON value
         let root: Value = serde_json::from_str(input).unwrap();
@@ -34,10 +38,11 @@ impl Npm {
         
         let derefurl = derefurl.replace("git+", "");
         let derefurl = derefurl.replace(".git", "");
-        println!("giturl = {:?}", derefurl);
+        // println!("ouput_url = {:?}", derefurl);
         
         // create github object
         let output = Github::with_url(&derefurl)?;
+        // println!("ouput_url = {:?}", output);
         
         // return
         Some(Npm {
