@@ -1,7 +1,5 @@
 pub mod github;
-use async_trait::async_trait;
 
-#[async_trait] 
 pub trait Metrics {
     // calculate metrics of module
     // returns value in range [0, 1]
@@ -13,7 +11,7 @@ pub trait Metrics {
     fn correctness(&self) -> f64;
 
     // whether there are enough maintainers for module
-    async fn bus_factor(&self) -> f64;
+    fn bus_factor(&self) -> f64;
 
     // responsiveness of module maintainers fixing bugs
     fn responsiveness(&self) -> f64;

@@ -2,7 +2,6 @@ use crate::metrics::Metrics;
 use reqwest::header;
 use statrs::distribution::{Continuous, Normal};
 use std::io::BufRead;
-use async_trait::async_trait;
 
 #[derive(Debug)]
 pub struct Github {
@@ -87,22 +86,19 @@ impl Github {
     }
 
     // GitHub GraphQL API 
-    pub async fn graphql_api(&self) -> reqwest::Result<serde_json::Value> {
-        let client = reqwest::Client::builder();
-        let response = client
-            .user_agent("ECE461_Team19_CLI")
-            .build()
-            .unwrap()
+    pub fn graphql(&self) -> reqwest::Result<reqwest::blocking::Response> {
+        self.client
             .post("https://api.github.com/graphql")
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
             .bearer_auth(format!("{}", std::env::var("GITHUB_TOKEN").unwrap()))
             .body(
                 format!("{{\"query\" : \"query {{ repository(owner:\\\"{}\\\", name:\\\"{}\\\") {{ mentionableUsers {{ totalCount }} }} }}\" }}", self.owner, self.repo)
             )
             .send()
-            .await?;
-        
-        return Ok(response.json::<serde_json::Value>().await?);
+    }
+    
+    // GraphQL API call in json format 
+    pub fn graph_json(&self) -> reqwest::Result<serde_json::Value> {
+        self.graphql()?.json::<serde_json::Value>()
     }
 
     // count how many pages the result has
@@ -126,7 +122,6 @@ impl Github {
         Ok(page.unwrap().parse::<u32>().unwrap())
     }
 }
-#[async_trait] 
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
         // Specify the path of repo to clone into
@@ -172,12 +167,15 @@ impl Metrics for Github {
         }
     }
 
-    async fn bus_factor(&self) -> f64 {
-        let bus = self.graphql_api().await.unwrap(); 
-        let stringData = bus["data"]["repository"]["mentionableUsers"]["totalCount"].as_str();
-        let mut x: f64 = stringData.unwrap().parse().unwrap();
-        x = ((2.0 * x) / (x + 1.0)) - 1.0 
-
+    fn bus_factor(&self) -> f64 {
+        // call graphql api to get the data specified in the query 
+        let bus = self.graph_json().unwrap();
+        let collaborators = bus["data"]["repository"]["mentionableUsers"]["totalCount"]
+            .as_i64()
+            .unwrap();
+        // calculate the score for bus factor
+        let score: f64 = ((2.0 * collaborators as f64) / (collaborators as f64 + 1.0)) - 1.0;
+        return score;
     }
 
     fn responsiveness(&self) -> f64 {
