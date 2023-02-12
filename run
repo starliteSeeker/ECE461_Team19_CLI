@@ -45,11 +45,13 @@ elif [[ "$1" == "test" ]]; then
     rm -f *.profraw
     rm -f *.profdata
     rm -f cargo_test.out
+    rm -f test_exes.txt
     rm -f test_result.out
     rm -f test_result.temp
     rm -f line_result.out
 
     # run tests
+    RUSTFLAGS="-C instrument-coverage" cargo build --target-dir="test_target"
     RUSTFLAGS="-C instrument-coverage" cargo test --tests --message-format=json --no-run ece461_team19_cli > cargo_test.out
     grep '"executable":".*/deps/' cargo_test.out | sed 's/.*"executable":"\([^"]*\)".*/\1/' > test_exes.txt
     while IFS="" read -r line
@@ -57,18 +59,36 @@ elif [[ "$1" == "test" ]]; then
         "$line" --logfile=./test_result.temp
         cat ./test_result.temp >> ./test_result.out
     done < test_exes.txt
-    exit
 
     # merge coverage data
     "$LLVM_PROFDATA" merge -sparse *.profraw -o line_result.profdata
-    "$LLVM_COV" export -format=text -summary-only "$TEST_EXE" \
+
+    # process test result
+    if [[ "$2" == "show" ]]; then
+        "$LLVM_COV" show -Xdemangler=rustfilt \
+            $(while IFS="" read -r line; \
+                do \
+                    printf "%s %s " "--object" $line; \
+                done < test_exes.txt \
+            ) \
+            --object ./test_target/debug/ece461_team19_cli \
+            --instr-profile=line_result.profdata \
+            --ignore-filename-regex=/.cargo/registry \
+            --ignore-filename-regex=/rustc
+    fi
+
+    "$LLVM_COV" export -format=text -summary-only \
+        $(while IFS="" read -r line; \
+            do \
+                printf "%s %s " "--object" $line; \
+            done < test_exes.txt \
+        ) \
+        --object ./test_target/debug/ece461_team19_cli \
         --instr-profile=line_result.profdata \
         --ignore-filename-regex=/.cargo/registry \
         --ignore-filename-regex=/rustc \
         > ./line_result.out
 
-    # process test result
-    [[ -f "$EXE" ]] || "$0" build
     "$EXE" report ./test_result.out ./line_result.out
 else
     # parse url file
