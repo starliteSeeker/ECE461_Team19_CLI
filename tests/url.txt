@@ -1,0 +1,3 @@
+https://github.com/nodeca/js-yaml
+https://www.npmjs.com/package/qs
+https://github.com/brix/crypto-js

@@ -106,7 +106,13 @@ impl Github {
         let response = self.rest_api(path)?;
         let header = response.headers().get("link");
         if header.is_none() {
-            if response.json::<serde_json::Value>().unwrap()["message"].is_null() {
+            if response
+                .json::<serde_json::Value>()?
+                .as_array()
+                .unwrap()
+                .len()
+                != 0
+            {
                 return Ok(1);
             } else {
                 return Ok(0);
@@ -124,16 +130,17 @@ impl Github {
 impl Metrics for Github {
     fn ramp_up_time(&self) -> f64 {
         // Specify the path of repo to clone into
-        let repo_path = std::path::Path::new("cloned_repo");
+        let path_name = format!("cloned_{}_{}", self.owner, self.repo);
+        let repo_path = std::path::Path::new(&path_name);
 
         // Clone the repo
         git2::Repository::clone(&self.link, repo_path).unwrap();
 
         // Check if there is readme
-        let file = match std::fs::File::open("cloned_repo/README.md") {
+        let file = match std::fs::File::open(&format!("{}/README.md", path_name)) {
             Ok(file) => file,
             Err(_) => {
-                println!("Cannot find README");
+                std::fs::remove_dir_all(repo_path).unwrap();
                 return 0.0;
             }
         };
@@ -141,10 +148,7 @@ impl Metrics for Github {
 
         // Get the # of lines and calculate the score
         let lines = reader.lines().count();
-        let mut x = lines as f64;
-        x = x / 150.0 * 0.7;
-        let normal = Normal::new(0.0, 1.0).unwrap();
-        let result = normal.pdf(x) * x.sqrt() / 0.261;
+        let result = Self::calc_ramp_up_time(lines.try_into().unwrap_or(u32::MAX));
         std::fs::remove_dir_all(repo_path).unwrap();
         result
     }
@@ -159,11 +163,7 @@ impl Metrics for Github {
             - self
                 .rest_page_count("pulls?state=closed&per_page=1")
                 .unwrap();
-        if all == 0 {
-            0.0
-        } else {
-            closed as f64 / all as f64
-        }
+        Self::calc_correctness(all, closed)
     }
 
     fn bus_factor(&self) -> f64 {
@@ -204,21 +204,7 @@ impl Metrics for Github {
             return 0.0;
         }
 
-        let acceptable = [
-            "LGPL-2.1-only",
-            "LGPL-2.1",
-            "LGPL-2.1-or-later",
-            "LGPL-3.0-only",
-            "LGPL-3.0",
-            "BSD-3-Clause",
-            "MIT",
-            "X11",
-        ];
-        if acceptable.contains(&license.unwrap()) {
-            1.0
-        } else {
-            0.0
-        }
+        Self::calc_compatibility(&license.unwrap())
     }
 }
 
@@ -241,23 +227,128 @@ mod tests {
         assert!(Github::with_url("not an url").is_none());
 
         // not a github url
+        assert!(Github::with_url("https://127.0.0.1/").is_none());
         assert!(Github::with_url(
             "https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html"
         )
         .is_none());
 
         // not a repo url
+        assert!(Github::with_url("https://github.com").is_none());
         assert!(Github::with_url("https://github.com/rust-lang").is_none());
     }
 
     // testing rest_json()
     #[test]
-    fn rest_api_stargazers() -> reqwest::Result<()> {
+    fn rest_api_stargazers() {
         let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
         assert_eq!(
             30,
             g.rest_json("stargazers").unwrap().as_array().unwrap().len()
         );
-        Ok(())
+    }
+
+    // testing graph_json()
+    #[test]
+    fn graph_api_username() {
+        let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
+        let reply = g
+            .graph_json("{\"query\": \"query { viewer { login } }\"}".to_string())
+            .unwrap();
+        assert!(!reply["data"]["viewer"]["login"]
+            .as_str()
+            .unwrap()
+            .is_empty());
+    }
+
+    // testing ramp_up_time
+    #[test]
+    fn ramp_up_time_no_readme() {
+        let g = Github::with_url("https://github.com/phil-opp/llvm-tools").unwrap();
+        assert_eq!(0.0, g.ramp_up_time());
+    }
+
+    #[test]
+    fn ramp_up_time_normal_case() {
+        let g = Github::with_url("https://github.com/yt-dlp/yt-dlp").unwrap();
+        assert!(g.ramp_up_time() > 0.0);
+    }
+
+    #[test]
+    fn ramp_up_time_max() {
+        // 147 lines
+        let g = Github::with_url("https://github.com/graphql/graphql-js").unwrap();
+        assert!(g.ramp_up_time() >= 0.99);
+    }
+
+    // testing correctness
+    #[test]
+    fn correctness_no_issues() {
+        let g = Github::with_url("https://github.com/thinkloop/map-or-similar").unwrap();
+        assert!(g.correctness() == 0.0);
+    }
+
+    #[test]
+    fn correctness_max() {
+        // 0 open, 1 closed issues
+        let g = Github::with_url("https://github.com/crypto-browserify/md5.js").unwrap();
+        assert!(g.correctness() == 1.0);
+    }
+
+    #[test]
+    fn correctness_normal_case() {
+        let g = Github::with_url("https://github.com/neovim/neovim").unwrap();
+        assert!(g.correctness() >= 0.0);
+    }
+
+    // testing bus factor
+    #[test]
+    fn bus_factor_0_contributors() {
+        let g = Github::with_url("https://github.com/sergi/ftp-response-parser").unwrap();
+        assert!(g.bus_factor() <= 0.05);
+    }
+
+    #[test]
+    fn bus_factor_normal_case() {
+        let g = Github::with_url("https://github.com/EverestAPI/Olympus").unwrap();
+        assert!(g.bus_factor() > 0.5);
+    }
+
+    // testing responsiveness
+    #[test]
+    fn responsiveness_0() {
+        let g = Github::with_url("https://github.com/adafruit/Adafruit-MPU6050-PCB").unwrap();
+        assert!(g.responsiveness() < 0.05);
+    }
+
+    #[test]
+    fn responsiveness_normal_case() {
+        let g = Github::with_url("https://github.com/ImageMagick/ImageMagick").unwrap();
+        assert!(g.responsiveness() > 0.0);
+    }
+
+    // testing compatibility
+    #[test]
+    fn compatibility_no_license() {
+        let g = Github::with_url("https://github.com/cloudinary/cloudinary_npm").unwrap();
+        assert!(g.compatibility() == 0.0);
+    }
+
+    #[test]
+    fn compatibility_lgpl_3() {
+        let g = Github::with_url("https://github.com/haskell/ghcup-hs").unwrap();
+        assert!(g.compatibility() == 1.0);
+    }
+
+    #[test]
+    fn compatibility_mit() {
+        let g = Github::with_url("https://github.com/microsoft/vscode").unwrap();
+        assert!(g.compatibility() == 1.0);
+    }
+
+    #[test]
+    fn compatibility_apache() {
+        let g = Github::with_url("https://github.com/haskell/haskell-language-server").unwrap();
+        assert!(g.compatibility() == 0.0);
     }
 }
