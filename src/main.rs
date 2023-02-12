@@ -3,6 +3,7 @@ mod metrics;
 use clap::{Parser, Subcommand};
 use log::{debug, info, LevelFilter};
 use metrics::github::Github;
+use metrics::npm::Npm;
 use metrics::Metrics;
 use std::io::Write;
 use std::{
@@ -83,25 +84,24 @@ fn calcscore(f: &String) -> Result<(), String> {
         if line.is_empty() {
             continue;
         }
+        info!("exploring {}", line);
 
-        // if type is github
+        // if type is github or npm
         if let Some(domain) = reqwest::Url::parse(&line)
             .map_err(|_| format!("{} is not a url", line))?
             .domain()
         {
-            println!("{}", domain);
             let project: Box<dyn Metrics>;
             // if github
             if domain == "github.com" {
                 project = Box::new(Github::with_url(&line).unwrap());
             } else if domain == "www.npmjs.com" {
-                continue;
-                project = Box::new(Github::with_url(&line).unwrap());
-                println!("");
+                project = Box::new(Npm::with_url(&line).unwrap());
             } else {
                 continue;
             }
             // calculate score
+            info!("calculating score");
             let mut net_score = HashMap::new();
             let ramp_up: f64 = project.ramp_up_time();
             let correctness: f64 = project.correctness();
@@ -126,6 +126,7 @@ fn calcscore(f: &String) -> Result<(), String> {
         }
     }
     // sort by net scores
+    info!("sorting by net scores");
     net_scores.sort_by(|a, b| {
         b["NET_SCORE"]
             .parse::<f64>()
@@ -138,6 +139,7 @@ fn calcscore(f: &String) -> Result<(), String> {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
 
+    info!("generating output");
     for dict in net_scores {
         handle
             .write_fmt(format_args!("{{\"URL\":{:?}, ", dict.get("URL").unwrap()))
