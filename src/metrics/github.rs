@@ -240,13 +240,25 @@ mod tests {
 
     // testing rest_json()
     #[test]
-    fn rest_api_stargazers() -> reqwest::Result<()> {
+    fn rest_api_stargazers() {
         let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
         assert_eq!(
             30,
             g.rest_json("stargazers").unwrap().as_array().unwrap().len()
         );
-        Ok(())
+    }
+
+    // testing graph_json()
+    #[test]
+    fn graph_api_username() {
+        let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
+        let reply = g
+            .graph_json("{{\"query\": \"query {{ viewer {{ login }} }}\"}}")
+            .unwrap();
+        assert!(reply["data"]["viewer"]["login"]
+            .as_str()
+            .unwrap()
+            .is_empty());
     }
 
     // testing ramp_up_time
@@ -287,6 +299,32 @@ mod tests {
     fn correctness_normal_case() {
         let g = Github::with_url("https://github.com/neovim/neovim").unwrap();
         assert!(g.correctness() >= 0.0);
+    }
+
+    // testing bus factor
+    #[test]
+    fn bus_factor_0_contributors() {
+        let g = Github::with_url("Kaleidosium/earthbound-battle-backgrounds-rollup").unwrap();
+        assert!(g.bus_factor() <= 0.05);
+    }
+
+    #[test]
+    fn bus_factor_normal_case() {
+        let g = Github::with_url("https://github.com/EverestAPI/Olympus").unwrap();
+        assert!(g.bus_factor() > 0.5);
+    }
+
+    // testing responsiveness
+    #[test]
+    fn responsiveness_0() {
+        let g = Github::with_url("https://github.com/adafruit/Adafruit-MPU6050-PCB").unwrap();
+        assert!(g.responsiveness() < 0.05);
+    }
+
+    #[test]
+    fn responsiveness_normal_case() {
+        let g = Github::with_url("https://github.com/ImageMagick/ImageMagick").unwrap();
+        assert!(g.responsiveness() > 0.0);
     }
 
     // testing compatibility
