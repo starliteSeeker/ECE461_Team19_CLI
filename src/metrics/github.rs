@@ -253,9 +253,9 @@ mod tests {
     fn graph_api_username() {
         let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
         let reply = g
-            .graph_json("{{\"query\": \"query {{ viewer {{ login }} }}\"}}")
+            .graph_json("{\"query\": \"query { viewer { login } }\"}".to_string())
             .unwrap();
-        assert!(reply["data"]["viewer"]["login"]
+        assert!(!reply["data"]["viewer"]["login"]
             .as_str()
             .unwrap()
             .is_empty());
@@ -304,7 +304,7 @@ mod tests {
     // testing bus factor
     #[test]
     fn bus_factor_0_contributors() {
-        let g = Github::with_url("Kaleidosium/earthbound-battle-backgrounds-rollup").unwrap();
+        let g = Github::with_url("https://github.com/sergi/ftp-response-parser").unwrap();
         assert!(g.bus_factor() <= 0.05);
     }
 
