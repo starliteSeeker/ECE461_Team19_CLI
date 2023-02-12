@@ -46,12 +46,18 @@ elif [[ "$1" == "test" ]]; then
     rm -f *.profdata
     rm -f cargo_test.out
     rm -f test_result.out
+    rm -f test_result.temp
     rm -f line_result.out
 
     # run tests
     RUSTFLAGS="-C instrument-coverage" cargo test --tests --message-format=json --no-run ece461_team19_cli > cargo_test.out
-    TEST_EXE=$(tail -2 cargo_test.out | head -1 | sed 's/.*"executable":"\([^"]*\)".*/\1/')
-    "$TEST_EXE" --logfile=./test_result.out
+    grep '"executable":".*/deps/' cargo_test.out | sed 's/.*"executable":"\([^"]*\)".*/\1/' > test_exes.txt
+    while IFS="" read -r line
+    do
+        "$line" --logfile=./test_result.temp
+        cat ./test_result.temp >> ./test_result.out
+    done < test_exes.txt
+    exit
 
     # merge coverage data
     "$LLVM_PROFDATA" merge -sparse *.profraw -o line_result.profdata
