@@ -1,4 +1,5 @@
 pub mod github;
+pub mod npm;
 
 pub trait Metrics {
     // calculate metrics of module
