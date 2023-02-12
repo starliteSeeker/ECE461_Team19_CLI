@@ -181,6 +181,8 @@ impl Metrics for Github {
 
     fn responsiveness(&self) -> f64 {
         // get pull requests last year with GraphQL API
+        // source of query:
+        // https://stackoverflow.com/questions/61477294/how-to-filter-github-pull-request-by-updated-date-using-graphql
         let a_year_ago = (Utc::now() - chrono::naive::Days::new(365)).format("%Y-%m-%d");
         let json = self.graph_json(
             format!("{{\"query\" : \"query {{ search(query: \\\"repo:{}/{} is:pr updated:>={}\\\" type:ISSUE) {{ issueCount }} }}\" }}", self.owner, self.repo, a_year_ago)
