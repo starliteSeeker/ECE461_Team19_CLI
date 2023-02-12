@@ -68,3 +68,35 @@ impl Metrics for Npm {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_url() {
+        assert!(Npm::with_url("").is_none());
+    }
+
+    #[test]
+    fn bad_url() {
+        assert!(Npm::with_url("https://www.youtube.com/").is_none());
+    }
+
+    #[test]
+    fn good_url() {
+        assert!(Npm::with_url("https://www.npmjs.com/package/js-yaml").is_some());
+    }
+
+    #[test]
+    fn test_metrics() {
+        let n = Npm::with_url("https://www.npmjs.com/package/js-yaml").unwrap();
+        println!(
+            "{} {} {} {} {}",
+            n.ramp_up_time(),
+            n.correctness(),
+            n.bus_factor(),
+            n.responsiveness(),
+            n.compatibility()
+        );
+    }
+}
