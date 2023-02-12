@@ -18,6 +18,10 @@ else
 fi
 
 if [[ "$1" == "build" ]]; then
+    if [[ -f .IS_ECEPROG ]]; then
+        . ~/.cargo/env
+    fi
+
     # build program
     cargo build
 elif [[ "$1" == "install" ]]; then
@@ -27,6 +31,7 @@ elif [[ "$1" == "install" ]]; then
 	bash rustup_install.sh -y --no-modify-path
 	source ~/.cargo/env
 	rm -f rustup_install.sh
+	touch .IS_ECEPROG
     fi
 
     # install test dependencies
@@ -35,6 +40,10 @@ elif [[ "$1" == "install" ]]; then
         cargo install cargo-binutils
     fi
 elif [[ "$1" == "test" ]]; then
+    if [[ -f .IS_ECEPROG ]]; then
+        . ~/.cargo/env
+    fi
+
     # check for github token
     if [[ "$GITHUB_TOKEN" == "" ]]; then
         echo "Please supply \$GITHUB_TOKEN for the correct test result"
@@ -49,6 +58,7 @@ elif [[ "$1" == "test" ]]; then
     rm -f test_result.out
     rm -f test_result.temp
     rm -f line_result.out
+    rm -rf ./test_target
 
     # run tests
     RUSTFLAGS="-C instrument-coverage" cargo build --target-dir="test_target"
@@ -90,7 +100,20 @@ elif [[ "$1" == "test" ]]; then
         > ./line_result.out
 
     "$EXE" report ./test_result.out ./line_result.out
+
+    rm -f *.profraw
+    rm -f *.profdata
+    rm -f cargo_test.out
+    rm -f test_exes.txt
+    rm -f test_result.out
+    rm -f test_result.temp
+    rm -f line_result.out
+    rm -rf ./test_target
 else
+    if [[ -f .IS_ECEPROG ]]; then
+        . ~/.cargo/env
+    fi
+
     # parse url file
     "$EXE" url $1
 fi
