@@ -21,6 +21,14 @@ if [[ "$1" == "build" ]]; then
     # build program
     cargo build
 elif [[ "$1" == "install" ]]; then
+    # install newer rust
+    if ! [ -x "$(command -v rustup)" ]; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup_install.sh
+	bash rustup_install.sh -y --no-modify-path
+	source ~/.cargo/env
+	rm -f rustup_install.sh
+    fi
+
     # install test dependencies
     if ! [ -x "$(command -v llvm-profdata-14)" ]; then
         rustup component add llvm-tools-preview
