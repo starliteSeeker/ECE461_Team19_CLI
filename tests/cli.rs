@@ -37,6 +37,15 @@ fn empty_file() {
 }
 
 #[test]
+fn new_lines() {
+    let mut cmd = Command::cargo_bin("ece461_team19_cli").unwrap();
+    cmd.args(["url", "tests/newline.txt"])
+        .assert()
+        .success()
+        .stdout("");
+}
+
+#[test]
 fn bad_url() {
     let mut cmd = Command::cargo_bin("ece461_team19_cli").unwrap();
     cmd.args(["url", "tests/badurl.txt"]).assert().failure();

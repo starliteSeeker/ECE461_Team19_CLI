@@ -80,6 +80,10 @@ fn calcscore(f: &String) -> Result<(), String> {
 
     for line in reader.lines() {
         let line = line.unwrap();
+        if line.is_empty() {
+            continue;
+        }
+
         // if type is github
         if let Some(domain) = reqwest::Url::parse(&line)
             .map_err(|_| format!("{} is not a url", line))?
