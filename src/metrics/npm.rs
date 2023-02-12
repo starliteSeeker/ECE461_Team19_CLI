@@ -1,6 +1,6 @@
-use crate::metrics::Metrics;
 use crate::metrics::github::Github;
-use serde_json::Value;      // for parsing json
+use crate::metrics::Metrics;
+use serde_json::Value; // for parsing json
 
 pub struct Npm {
     gh: Box<dyn Metrics>,
@@ -9,8 +9,11 @@ pub struct Npm {
 
 impl Npm {
     pub fn with_url(url: &str) -> Option<Npm> {
-        let npm_url = url.replace("https://www.npmjs.com/package/", "https://registry.npmjs.org/");
-        
+        let npm_url = url.replace(
+            "https://www.npmjs.com/package/",
+            "https://registry.npmjs.org/",
+        );
+
         let npm_url = reqwest::blocking::get(npm_url).ok()?.text().ok()?;
 
         // input url
@@ -18,10 +21,10 @@ impl Npm {
 
         // parse url into generic JSON value
         let root: Value = serde_json::from_str(input).ok()?;
-        
 
         // access element using .get()
-        let giturl: Option<&str> = root.get("repository")
+        let giturl: Option<&str> = root
+            .get("repository")
             .and_then(|value| value.get("url"))
             .and_then(|value| value.as_str());
 
@@ -29,20 +32,16 @@ impl Npm {
         let derefurl = &giturl.as_deref()?;
 
         // Do not need to check if url contains git+, just do replace. That would take care of it
-        // if derefurl.contains("git+") {
-        //     let derefurl = derefurl.replace("git+", "");
-        // }
-        
         let derefurl = derefurl.replace("git+", "");
         let derefurl = derefurl.replace(".git", "");
-        
+
         // create github object
         let output = Github::with_url(&derefurl)?;
-        
+
         // return
         Some(Npm {
             gh: Box::new(output),
-            derefurl: derefurl.to_string()
+            derefurl: derefurl.to_string(),
         })
     }
 }
@@ -68,3 +67,4 @@ impl Metrics for Npm {
         self.gh.compatibility()
     }
 }
+
