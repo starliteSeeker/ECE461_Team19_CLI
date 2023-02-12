@@ -1,5 +1,6 @@
 use crate::metrics::Metrics;
 use chrono::{offset::Utc, Datelike};
+use log::{info, debug};
 use reqwest::header;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 use std::io::BufRead;
@@ -134,7 +135,9 @@ impl Metrics for Github {
         let repo_path = std::path::Path::new(&path_name);
 
         // Clone the repo
+        info!("cloning repository from {}", &self.link);
         git2::Repository::clone(&self.link, repo_path).unwrap();
+        info!("repository cloned");
 
         // Check if there is readme
         let file = match std::fs::File::open(&format!("{}/README.md", path_name)) {
@@ -147,14 +150,18 @@ impl Metrics for Github {
         let reader = std::io::BufReader::new(file);
 
         // Get the # of lines and calculate the score
+        info!("calculating ramp_up_score");
         let lines = reader.lines().count();
         let result = Self::calc_ramp_up_time(lines.try_into().unwrap_or(u32::MAX));
         std::fs::remove_dir_all(repo_path).unwrap();
+        debug!("ramp_up_score: {:.2}", result);
+        info!("repository deleted");
         result
     }
 
     fn correctness(&self) -> f64 {
         // issues returns pull requests as well, so subtract pulls from issues
+        info!("calculating correctness_score");
         let all = self.rest_page_count("issues?state=all&per_page=1").unwrap()
             - self.rest_page_count("pulls?state=all&per_page=1").unwrap();
         let closed = self
@@ -163,11 +170,14 @@ impl Metrics for Github {
             - self
                 .rest_page_count("pulls?state=closed&per_page=1")
                 .unwrap();
-        Self::calc_correctness(all, closed)
+        let result = Self::calc_correctness(all, closed);
+        debug!("correctness_score: {:.2}", result);
+        result
     }
 
     fn bus_factor(&self) -> f64 {
         // call graphql api to get the data specified in the query
+        info!("calculating bus_factor_score");
         let bus = self.graph_json(
             format!("{{\"query\" : \"query {{ repository(owner:\\\"{}\\\", name:\\\"{}\\\") {{ mentionableUsers {{ totalCount }} }} }}\" }}", self.owner, self.repo)
             ).unwrap();
@@ -176,6 +186,7 @@ impl Metrics for Github {
             .unwrap();
         // calculate the score for bus factor
         let score: f64 = ((2.0 * collaborators as f64) / (collaborators as f64 + 1.0)) - 1.0;
+        debug!("bus_factor_score: {:.2}", score);
         return score;
     }
 
@@ -183,6 +194,7 @@ impl Metrics for Github {
         // get pull requests last year with GraphQL API
         // source of query:
         // https://stackoverflow.com/questions/61477294/how-to-filter-github-pull-request-by-updated-date-using-graphql
+        info!("calculating responsive_maintainer_score");
         let a_year_ago = (Utc::now() - chrono::naive::Days::new(365)).format("%Y-%m-%d");
         let json = self.graph_json(
             format!("{{\"query\" : \"query {{ search(query: \\\"repo:{}/{} is:pr updated:>={}\\\" type:ISSUE) {{ issueCount }} }}\" }}", self.owner, self.repo, a_year_ago)
@@ -191,11 +203,14 @@ impl Metrics for Github {
 
         let normal = Normal::new(0.0, 1.0).unwrap();
 
-        normal.cdf(pulls / 13.0 - 2.0)
+        let result = normal.cdf(pulls / 13.0 - 2.0);
+        debug!("responsive_maintainer_score: {:.2}", result);
+        result
     }
 
     fn compatibility(&self) -> f64 {
         // get license with github api
+        info!("calculating license_score");
         let l = self.rest_json("license").unwrap();
         let license = l["license"]["spdx_id"].as_str();
 
@@ -204,7 +219,9 @@ impl Metrics for Github {
             return 0.0;
         }
 
-        Self::calc_compatibility(&license.unwrap())
+        let result = Self::calc_compatibility(&license.unwrap());
+        debug!("license_score: {:.2}", result);
+        result
     }
 }
 
