@@ -1,6 +1,7 @@
 use crate::metrics::Metrics;
+use chrono::{offset::Utc, Datelike};
 use reqwest::header;
-use statrs::distribution::{Continuous, Normal};
+use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 use std::io::BufRead;
 
 #[derive(Debug)]
@@ -85,20 +86,18 @@ impl Github {
         self.rest_api(path)?.json::<serde_json::Value>()
     }
 
-    // GitHub GraphQL API 
-    pub fn graphql(&self) -> reqwest::Result<reqwest::blocking::Response> {
+    // GitHub GraphQL API
+    pub fn graphql(&self, query: String) -> reqwest::Result<reqwest::blocking::Response> {
         self.client
             .post("https://api.github.com/graphql")
             .bearer_auth(format!("{}", std::env::var("GITHUB_TOKEN").unwrap()))
-            .body(
-                format!("{{\"query\" : \"query {{ repository(owner:\\\"{}\\\", name:\\\"{}\\\") {{ mentionableUsers {{ totalCount }} }} }}\" }}", self.owner, self.repo)
-            )
+            .body(query)
             .send()
     }
-    
-    // GraphQL API call in json format 
-    pub fn graph_json(&self) -> reqwest::Result<serde_json::Value> {
-        self.graphql()?.json::<serde_json::Value>()
+
+    // GraphQL API call in json format
+    pub fn graph_json(&self, query: String) -> reqwest::Result<serde_json::Value> {
+        self.graphql(query)?.json::<serde_json::Value>()
     }
 
     // count how many pages the result has
@@ -168,8 +167,10 @@ impl Metrics for Github {
     }
 
     fn bus_factor(&self) -> f64 {
-        // call graphql api to get the data specified in the query 
-        let bus = self.graph_json().unwrap();
+        // call graphql api to get the data specified in the query
+        let bus = self.graph_json(
+            format!("{{\"query\" : \"query {{ repository(owner:\\\"{}\\\", name:\\\"{}\\\") {{ mentionableUsers {{ totalCount }} }} }}\" }}", self.owner, self.repo)
+            ).unwrap();
         let collaborators = bus["data"]["repository"]["mentionableUsers"]["totalCount"]
             .as_i64()
             .unwrap();
@@ -179,7 +180,16 @@ impl Metrics for Github {
     }
 
     fn responsiveness(&self) -> f64 {
-        0.0
+        // get pull requests last year with GraphQL API
+        let a_year_ago = (Utc::now() - chrono::naive::Days::new(365)).format("%Y-%m-%d");
+        let json = self.graph_json(
+            format!("{{\"query\" : \"query {{ search(query: \\\"repo:{}/{} is:pr updated:>={}\\\" type:ISSUE) {{ issueCount }} }}\" }}", self.owner, self.repo, a_year_ago)
+            ).unwrap();
+        let pulls = json["data"]["search"]["issueCount"].as_f64().unwrap();
+
+        let normal = Normal::new(0.0, 1.0).unwrap();
+
+        normal.cdf(pulls / 13.0 - 2.0)
     }
 
     fn compatibility(&self) -> f64 {
