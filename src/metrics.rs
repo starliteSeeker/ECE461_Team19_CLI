@@ -58,6 +58,8 @@ pub trait Metrics {
             "BSD-3-Clause",
             "MIT",
             "X11",
+            "CC0-1.0",
+            "Unlicense",
         ];
         if acceptable.contains(&license) {
             1.0
