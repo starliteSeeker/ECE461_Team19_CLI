@@ -75,6 +75,9 @@ fn main() -> Result<(), String> {
         } => {
             let (tests, passed) = file_parser::test_cases(t).unwrap();
             let coverage = file_parser::code_coverage(l).unwrap();
+            println!("Total: {}", tests);
+            println!("Passed: {}", passed);
+            println!("Coverage: {:.0}%", coverage);
             println!(
                 "{}/{} test cases passed. {:.2}% line coverage achieved.",
                 passed, tests, coverage
