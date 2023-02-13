@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 EXE="./target/debug/ece461_team19_cli"
+RELEASE_EXE="./target/release/ece461_team19_cli"
 
 if [[ "$1" == "build" ]]; then
     # build program
-    cargo build
+    cargo build --release
 elif [[ "$1" == "install" ]]; then
     # TODO list of dependencies to install
     echo "install what"
@@ -13,5 +14,5 @@ elif [[ "$1" == "test" ]]; then
     "$EXE" report some_report_file.profdata
 else
     # parse url file
-    "$EXE" url $1
+    "$RELEASE_EXE" url $1
 fi
