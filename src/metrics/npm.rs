@@ -4,7 +4,6 @@ use serde_json::Value; // for parsing json
 
 pub struct Npm {
     gh: Box<dyn Metrics>,
-    derefurl: String,
 }
 
 impl Npm {
@@ -41,7 +40,6 @@ impl Npm {
         // return
         Some(Npm {
             gh: Box::new(output),
-            derefurl: derefurl.to_string(),
         })
     }
 }

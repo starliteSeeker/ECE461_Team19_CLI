@@ -110,9 +110,14 @@ fn calcscore(f: &String) -> Result<(), String> {
             let project: Box<dyn Metrics>;
             // if github
             if domain == "github.com" {
-                project = Box::new(Github::with_url(&line).unwrap());
+                project = Box::new(
+                    Github::with_url(&line)
+                        .ok_or(format!("Error while processing url: {}", &line))?,
+                );
             } else if domain == "www.npmjs.com" {
-                project = Box::new(Npm::with_url(&line).unwrap());
+                project = Box::new(
+                    Npm::with_url(&line).ok_or(format!("Error while processing url: {}", &line))?,
+                );
             } else {
                 continue;
             }
