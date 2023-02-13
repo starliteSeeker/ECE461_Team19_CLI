@@ -1,8 +1,8 @@
 use crate::metrics::Metrics;
-use chrono::{offset::Utc, Datelike};
+use chrono::offset::Utc;
 use log::{debug, info};
 use reqwest::header;
-use statrs::distribution::{Continuous, ContinuousCDF, Normal};
+use statrs::distribution::{ContinuousCDF, Normal};
 use std::io::BufRead;
 
 #[derive(Debug)]
