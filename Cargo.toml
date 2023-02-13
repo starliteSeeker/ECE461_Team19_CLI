@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.1.3", features = ["derive"] }
 env_logger = "0.10.0"
 log = "0.4.17"
 reqwest = { version = "0.11.14", features = ["blocking", "json"] }
@@ -15,3 +14,4 @@ git2 = "0.16.1"
 statrs = "0.16.0"
 chrono = "0.4.23"
 assert_cmd = "2.0.8"
+clap = { version = "4.1.4", features = ["derive"] }

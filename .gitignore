@@ -1,2 +1,7 @@
 /target
-/cloned_repo
+/test_target
+/cloned_*
+/*.out
+/*.profraw
+/*.profdata
+/.IS_ECEPROG
