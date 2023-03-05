@@ -223,6 +223,10 @@ impl Metrics for Github {
         debug!("license_score: {:.2}", result);
         result
     }
+
+    fn reviewed_code(&self) -> f64 {
+        0.6
+    }
 }
 
 #[cfg(test)] // needs $GITHUB_TOKEN

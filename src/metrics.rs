@@ -22,6 +22,8 @@ pub trait Metrics {
     // whether module is compatible with LGPLv2.1
     fn compatibility(&self) -> f64;
 
+    fn reviewed_code(&self) -> f64;
+
     // formulas for calculating metrics
     fn calc_ramp_up_time(lines: u32) -> f64
     where
@@ -82,6 +84,9 @@ mod tests {
             0.0
         }
         fn bus_factor(&self) -> f64 {
+            0.0
+        }
+        fn reviewed_code(&self) -> f64 {
             0.0
         }
         fn responsiveness(&self) -> f64 {
