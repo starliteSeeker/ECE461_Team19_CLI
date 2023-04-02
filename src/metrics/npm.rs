@@ -57,6 +57,10 @@ impl Metrics for Npm {
         self.gh.bus_factor()
     }
 
+    fn reviewed_code(&self) -> f64 {
+        self.gh.reviewed_code()
+    }
+
     fn responsiveness(&self) -> f64 {
         self.gh.responsiveness()
     }

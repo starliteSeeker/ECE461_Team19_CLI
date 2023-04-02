@@ -44,6 +44,7 @@ fn main() -> Result<(), String> {
     // set log output
     let log_output = if filter == LevelFilter::Off {
         env_logger::fmt::Target::Stderr // can be anything
+        //env_logger::fmt::Target::Stdout
     } else {
         let fp = std::env::var("LOG_FILE")
             .ok()
@@ -129,17 +130,20 @@ fn calcscore(f: &String) -> Result<(), String> {
             let bus_factor: f64 = project.bus_factor();
             let responsiveness: f64 = project.responsiveness();
             let compatibility: f64 = project.compatibility();
+            let reviewed_code: f64 = project.reviewed_code();
             let score: f64 = ramp_up * 0.05
                 + correctness * 0.1
                 + bus_factor * 0.1
                 + responsiveness * 0.25
-                + compatibility * 0.5;
+                + compatibility * 0.4
+                + reviewed_code * 0.2;
             net_score.insert("URL", line);
             net_score.insert("NET_SCORE", score.to_string());
             net_score.insert("RAMP_UP_SCORE", ramp_up.to_string());
             net_score.insert("CORRECTNESS_SCORE", correctness.to_string());
             net_score.insert("BUS_FACTOR_SCORE", bus_factor.to_string());
             net_score.insert("RESPONSIVE_MAINTAINER_SCORE", responsiveness.to_string());
+            net_score.insert("REVIEWED_CODE_SCORE", reviewed_code.to_string());
             net_score.insert("LICENSE_SCORE", compatibility.to_string());
             net_scores.push(net_score);
         } else {
@@ -190,6 +194,15 @@ fn calcscore(f: &String) -> Result<(), String> {
             .write_fmt(format_args!(
                 "\"BUS_FACTOR_SCORE\":{:.2}, ",
                 dict.get("BUS_FACTOR_SCORE")
+                    .unwrap()
+                    .parse::<f64>()
+                    .unwrap()
+            ))
+            .unwrap();
+        handle
+            .write_fmt(format_args!(
+                "\"REVIEWED_CODE\":{:.2}, ",
+                dict.get("REVIEWED_CODE_SCORE")
                     .unwrap()
                     .parse::<f64>()
                     .unwrap()
