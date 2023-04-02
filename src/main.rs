@@ -44,6 +44,7 @@ fn main() -> Result<(), String> {
     // set log output
     let log_output = if filter == LevelFilter::Off {
         env_logger::fmt::Target::Stderr // can be anything
+        //env_logger::fmt::Target::Stdout
     } else {
         let fp = std::env::var("LOG_FILE")
             .ok()

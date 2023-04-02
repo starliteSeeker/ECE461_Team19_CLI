@@ -5,6 +5,7 @@ use reqwest::header;
 use statrs::distribution::{ContinuousCDF, Normal};
 use std::io::BufRead;
 
+
 #[derive(Debug)]
 pub struct Github {
     // repository information
@@ -225,62 +226,29 @@ impl Metrics for Github {
     }
 
     fn reviewed_code(&self) -> f64 {
-        0.6
-    }
-}
+        // gets the fraction of project code that was introduced through pull requests with a code review
+        info!("calculating reviewed_code_score");
 
-#[cfg(test)] // needs $GITHUB_TOKEN
-mod tests {
-    use super::*;
-
-    // testing with_url()
-    #[test]
-    fn construct_with_url() {
-        let a = Github::with_url("https://github.com/lee3445/ECE461_Team19_CLI").unwrap();
-
-        assert_eq!(a.owner, "lee3445");
-        assert_eq!(a.repo, "ECE461_Team19_CLI");
-    }
-
-    #[test]
-    fn construct_with_bad_url() {
-        // not an url
-        assert!(Github::with_url("not an url").is_none());
-
-        // not a github url
-        assert!(Github::with_url("https://127.0.0.1/").is_none());
-        assert!(Github::with_url(
-            "https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html"
-        )
-        .is_none());
-
-        // not a repo url
-        assert!(Github::with_url("https://github.com").is_none());
-        assert!(Github::with_url("https://github.com/rust-lang").is_none());
-    }
-
-    // testing rest_json()
-    #[test]
-    fn rest_api_stargazers() {
-        let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
-        assert_eq!(
-            30,
-            g.rest_json("stargazers").unwrap().as_array().unwrap().len()
-        );
-    }
-
-    // testing graph_json()
-    #[test]
-    fn graph_api_username() {
-        let g = Github::with_url("https://github.com/seanmonstar/reqwest").unwrap();
-        let reply = g
-            .graph_json("{\"query\": \"query { viewer { login } }\"}".to_string())
+        let json = self.graph_json(
+            format!("{{\"query\" : \"query {{ repository(owner: \\\"{}\\\", name: \\\"{}\\\") {{ pullRequests(states: [OPEN, CLOSED], first: 100, orderBy: {{field: CREATED_AT, direction: DESC}}) {{ edges {{ node {{ number additions, number deletions, reviews(first: 1) {{ totalCount }} }} }} }} }} }}\" }}", self.owner, self.repo))
             .unwrap();
-        assert!(!reply["data"]["viewer"]["login"]
-            .as_str()
-            .unwrap()
-            .is_empty());
+
+        let mut reviewed_pull_count = 0;
+        let pulls = json["data"]["repository"]["pullRequests"]["edges"].as_array().unwrap();
+
+        for pull in pulls {
+            let reviews = &pull["node"]["reviews"]["totalCount"];
+            reviewed_pull_count += 1;
+        }
+
+        let reviewed_code_score = reviewed_pull_count / pulls.len();
+        // println!("numpulls = {}", pulls.len());
+        // println!("numreviewed = {}", reviewed_pull_count);
+        // println!("reviewed code score = {}", reviewed_code_score);
+        reviewed_code_score as f64
     }
+
+}
 
     // testing ramp_up_time
     #[test]
@@ -308,6 +276,7 @@ mod tests {
         let g = Github::with_url("https://github.com/thinkloop/map-or-similar").unwrap();
         assert!(g.correctness() == 0.0);
     }
+
 
     #[test]
     fn correctness_max() {
@@ -372,4 +341,11 @@ mod tests {
         let g = Github::with_url("https://github.com/haskell/haskell-language-server").unwrap();
         assert!(g.compatibility() == 0.0);
     }
-}
+
+    //testing reviewed code metric
+    #[test]
+    fn test_reveiwed_code() {
+        let g = Github::with_url("https://github.com/PurdueSoftEng/CLI-Tool").unwrap();
+        assert!(g.reviewed_code() <= 0.5);
+    }
+
